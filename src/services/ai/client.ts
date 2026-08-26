@@ -62,6 +62,12 @@ export async function invokeFunction<T>(
   }
 
   if (!res.ok) {
+    if (res.status === 429) {
+      throw new AiError(
+        'ai',
+        payload?.error ?? 'A lot of requests just now. Wait a moment and try again.',
+      );
+    }
     const message =
       payload?.error ??
       (res.status >= 500

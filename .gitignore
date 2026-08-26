@@ -40,5 +40,9 @@ yarn-error.*
 /ios
 /android
 
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
+
 # Yummi local secrets
 .env

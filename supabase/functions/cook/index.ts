@@ -8,6 +8,7 @@
 
 import { callClaudeJson } from '../_shared/anthropic.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
 type Body = {
   recipe?: { name?: string; steps?: string[] };
@@ -35,6 +36,9 @@ Return ONLY a JSON object, no prose, no code fences:
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
+
+  const limited = await enforceRateLimit(req);
+  if (limited) return limited;
 
   let body: Body;
   try {

@@ -12,7 +12,7 @@
       "bundleIdentifier": "com.yummi.app",
       "infoPlist": {
         "NSCameraUsageDescription": "Yummi uses the camera to photograph the inside of your fridge and identify ingredients.",
-        "NSMicrophoneUsageDescription": "Yummi uses the microphone so you can add ingredients and control cooking steps by voice.",
+        "NSMicrophoneUsageDescription": "Yummi uses the microphone so you can add ingredients and say “done” while cooking.",
         "NSSpeechRecognitionUsageDescription": "Yummi uses speech recognition to understand what you say while your hands are busy cooking."
       }
     },
@@ -23,7 +23,10 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "permissions": ["CAMERA", "RECORD_AUDIO"],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -43,9 +46,26 @@
         {
           "microphonePermission": "Yummi uses the microphone so you can add ingredients and say “done” while cooking.",
           "speechRecognitionPermission": "Yummi uses speech recognition to understand what you say while your hands are busy cooking.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c0ff66a4-d092-479d-a8de-0d308b9b248a"
+      }
+    }
   }
 }
