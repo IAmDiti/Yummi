@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Yummi",
+    "slug": "yummi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "yummi",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.yummi.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Yummi uses the camera to photograph the inside of your fridge and identify ingredients.",
+        "NSMicrophoneUsageDescription": "Yummi uses the microphone so you can add ingredients and control cooking steps by voice.",
+        "NSSpeechRecognitionUsageDescription": "Yummi uses speech recognition to understand what you say while your hands are busy cooking."
+      }
+    },
+    "android": {
+      "package": "com.yummi.app",
+      "adaptiveIcon": {
+        "backgroundImage": "./assets/android-icon-background.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["CAMERA", "RECORD_AUDIO"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Yummi uses the camera to photograph the inside of your fridge and identify ingredients."
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Yummi uses the microphone so you can add ingredients and say “done” while cooking.",
+          "speechRecognitionPermission": "Yummi uses speech recognition to understand what you say while your hands are busy cooking.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
+    ]
+  }
+}

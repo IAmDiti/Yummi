@@ -1,0 +1,12 @@
+# Minimal Supabase config for Yummi. Only Edge Functions are used — no database,
+# no auth tables. `project_id` is filled in by `supabase link`.
+project_id = "yummi"
+
+[functions.vision]
+verify_jwt = true
+
+[functions.recommend]
+verify_jwt = true
+
+[functions.cook]
+verify_jwt = true
