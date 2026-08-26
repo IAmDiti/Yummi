@@ -164,3 +164,4 @@ never-a-dead-end fallback (e.g. "Add ingredients manually" when the camera or vi
 | `npm run typecheck` | `tsc --noEmit` |
 | `npx expo-doctor` | project health check |
 | `npx expo export -p android` | build the JS bundle locally (sanity check) |
+# Yummi
