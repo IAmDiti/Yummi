@@ -9,7 +9,7 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.yummi.app",
+      "bundleIdentifier": "app.yummi.whattoeat",
       "infoPlist": {
         "NSCameraUsageDescription": "Yummi uses the camera to photograph the inside of your fridge and identify ingredients.",
         "NSMicrophoneUsageDescription": "Yummi uses the microphone so you can add ingredients and say “done” while cooking.",
@@ -27,7 +27,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "versionCode": 4
     },
     "web": {
       "favicon": "./assets/favicon.png",
