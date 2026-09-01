@@ -23,6 +23,9 @@
     },
     "production": {
       "autoIncrement": true,
+      "android": {
+        "credentialsSource": "local"
+      },
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://kttsrhpmgmukaupkpwcx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0dHNyaHBtZ211a2F1cGtwd2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDkxNDIsImV4cCI6MjEwMzMyNTE0Mn0.epe0O6q86-hSOqvR6syltrVNDTGQQYnTuS0jOu0mYXY"

@@ -46,3 +46,10 @@ supabase/.branches/
 
 # Yummi local secrets
 .env
+
+# Android keystore credentials/backups downloaded from EAS
+*-credentials.md
+credentials.json
+@*.jks
+@*.zip
+/credentials/

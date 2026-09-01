@@ -17,7 +17,7 @@
       }
     },
     "android": {
-      "package": "com.yummi.app",
+      "package": "app.yummi.whattoeat",
       "adaptiveIcon": {
         "backgroundImage": "./assets/android-icon-background.png",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -28,7 +28,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false,
-      "versionCode": 6
+      "versionCode": 9
     },
     "web": {
       "favicon": "./assets/favicon.png",
