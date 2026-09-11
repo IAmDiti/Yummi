@@ -21,60 +21,64 @@ type ImagePart = {
 };
 export type UserContent = string | Array<TextPart | ImagePart>;
 
+/** A JSON Schema describing an object — the exact shape a call should return. */
+export type ObjectSchema = { type: 'object'; [key: string]: unknown };
+
 type CallOpts = {
   system: string;
   content: UserContent;
+  /** JSON Schema for the result object. The model is forced to fill it in. */
+  schema: ObjectSchema;
   maxTokens?: number;
 };
 
-/** Single-turn call that returns raw assistant text. */
-export async function callClaudeText({
+/**
+ * Single-turn call that returns a structured object matching `schema`.
+ *
+ * Rather than ask the model to type a JSON object into its reply and then parse
+ * it back out (which fails whenever the model adds a code fence, a trailing
+ * comma, a stray sentence, or an unescaped quote inside a string), we expose a
+ * single tool whose input schema *is* the desired result and force the model to
+ * call it. The SDK returns `tool_use.input` already parsed — there is no text to
+ * scrape and no "response that could not be read" failure mode.
+ */
+export async function callClaudeStructured<T>({
   system,
   content,
-  maxTokens = 1200,
-}: CallOpts): Promise<string> {
+  schema,
+  maxTokens = 2000,
+}: CallOpts): Promise<T> {
   const res = await client.messages.create({
     model: MODEL,
     max_tokens: maxTokens,
+    // These are constrained extraction/generation tasks, not open reasoning
+    // problems. Disabling thinking keeps them fast and cheap and sidesteps the
+    // forced-tool-choice / thinking incompatibility.
+    thinking: { type: 'disabled' },
     system,
     messages: [{ role: 'user', content: content as any }],
+    tools: [
+      {
+        name: 'respond',
+        description: 'Return the result to the app in the required structure.',
+        input_schema: schema as any,
+      },
+    ],
+    tool_choice: { type: 'tool', name: 'respond' },
   });
 
   if (res.stop_reason === 'refusal') {
     throw new Error('The assistant could not help with that request.');
   }
-
-  return (res.content as any[])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
-}
-
-/**
- * Call Claude and parse a JSON value out of the reply. The system prompt must
- * instruct the model to return only JSON. Tolerates code fences and stray prose.
- */
-export async function callClaudeJson<T>(opts: CallOpts): Promise<T> {
-  const text = await callClaudeText(opts);
-  return extractJson<T>(text);
-}
-
-export function extractJson<T>(text: string): T {
-  let s = text.trim();
-
-  const fence = s.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fence) s = fence[1].trim();
-
-  if (!(s.startsWith('{') || s.startsWith('['))) {
-    const start = s.search(/[[{]/);
-    const end = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
-    if (start !== -1 && end > start) s = s.slice(start, end + 1);
+  if (res.stop_reason === 'max_tokens') {
+    // The forced tool call was cut off mid-argument — its input is incomplete.
+    throw new Error('The assistant ran out of room to finish. Try again.');
   }
 
-  try {
-    return JSON.parse(s) as T;
-  } catch (_e) {
+  const toolUse = (res.content as any[]).find((b) => b.type === 'tool_use');
+  if (!toolUse || toolUse.input == null) {
     throw new Error('The assistant returned a response that could not be read.');
   }
+
+  return toolUse.input as T;
 }

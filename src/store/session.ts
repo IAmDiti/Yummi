@@ -1,11 +1,12 @@
 /**
- * The one and only app store. Holds the current "session": the ingredient list,
- * the active recommendation, the list of rejected suggestions, and the cooking
- * session once the user starts cooking.
+ * The scan -> ingredients -> recommend -> cook flow store. Holds the current
+ * ingredient list, the active recommendation, the list of rejected suggestions,
+ * and the cooking session once the user starts cooking. Independent of who's
+ * signed in — see src/store/auth.ts for the account/profile store — so this
+ * flow keeps working fully signed out.
  *
  * Only the ingredient list is persisted (AsyncStorage) so reopening the app
- * doesn't force a re-scan. Everything else is intentionally ephemeral — the MVP
- * has no accounts and no history.
+ * doesn't force a re-scan. Everything else is intentionally ephemeral.
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,6 +16,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import type {
   ChatTurn,
   CookingSession,
+  Difficulty,
   Ingredient,
   Recommendation,
 } from '../services/types';
@@ -27,7 +29,9 @@ export function newIngredientId() {
 
 type SessionState = {
   ingredients: Ingredient[];
-  recommendation: Recommendation | null;
+  /** the swipe deck — queue[0] is the top card */
+  recommendationQueue: Recommendation[];
+  difficultyFilter: Difficulty | null;
   rejected: string[];
   cooking: CookingSession | null;
 
@@ -40,8 +44,15 @@ type SessionState = {
   clearIngredients: () => void;
 
   // recommendations
-  setRecommendation: (rec: Recommendation | null) => void;
-  rejectCurrent: () => void;
+  /** replaces the whole deck (first load, or the difficulty filter changed) */
+  setQueue: (list: Recommendation[]) => void;
+  /** tops up the deck with a prefetched batch, skipping names already seen */
+  appendToQueue: (list: Recommendation[]) => void;
+  setDifficultyFilter: (d: Difficulty | null) => void;
+  /** swipe left: drop the top card and remember it as rejected */
+  swipeReject: () => void;
+  /** swipe right: drop the top card and return it so the caller can start cooking it */
+  swipeAccept: () => Recommendation | null;
   resetRecommendations: () => void;
 
   // cooking
@@ -59,7 +70,8 @@ export const useSession = create<SessionState>()(
   persist(
     (set, get) => ({
       ingredients: [],
-      recommendation: null,
+      recommendationQueue: [],
+      difficultyFilter: null,
       rejected: [],
       cooking: null,
 
@@ -98,21 +110,41 @@ export const useSession = create<SessionState>()(
 
       clearIngredients: () => set({ ingredients: [] }),
 
-      setRecommendation: (rec) => set({ recommendation: rec }),
+      setQueue: (list) => set({ recommendationQueue: list }),
 
-      rejectCurrent: () =>
+      appendToQueue: (list) =>
         set((s) => {
-          if (!s.recommendation) return s;
-          const name = s.recommendation.name;
+          const seen = new Set([
+            ...s.recommendationQueue.map((r) => norm(r.name)),
+            ...s.rejected.map(norm),
+          ]);
+          const fresh = list.filter((r) => !seen.has(norm(r.name)));
+          return fresh.length ? { recommendationQueue: [...s.recommendationQueue, ...fresh] } : s;
+        }),
+
+      setDifficultyFilter: (d) => set({ difficultyFilter: d }),
+
+      swipeReject: () =>
+        set((s) => {
+          const [top, ...rest] = s.recommendationQueue;
+          if (!top) return s;
           return {
-            rejected: s.rejected.some((r) => norm(r) === norm(name))
+            recommendationQueue: rest,
+            rejected: s.rejected.some((r) => norm(r) === norm(top.name))
               ? s.rejected
-              : [...s.rejected, name],
-            recommendation: null,
+              : [...s.rejected, top.name],
           };
         }),
 
-      resetRecommendations: () => set({ recommendation: null, rejected: [] }),
+      swipeAccept: () => {
+        const [top, ...rest] = get().recommendationQueue;
+        if (!top) return null;
+        set({ recommendationQueue: rest });
+        return top;
+      },
+
+      resetRecommendations: () =>
+        set({ recommendationQueue: [], rejected: [], difficultyFilter: null }),
 
       startCooking: (rec) =>
         set({

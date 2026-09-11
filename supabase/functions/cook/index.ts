@@ -6,7 +6,7 @@
  * when the user asks something or reports a problem.
  */
 
-import { callClaudeJson } from '../_shared/anthropic.ts';
+import { callClaudeStructured, type ObjectSchema } from '../_shared/anthropic.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
@@ -30,8 +30,17 @@ You are given the recipe, the current step, the steps already done, known substi
 
 If something they say changes the plan for the REMAINING steps (a missing ingredient, a swap, a mistake to recover from), provide "revisedSteps": a fresh list of the remaining steps from the current point onward. Otherwise omit "revisedSteps".
 
-Return ONLY a JSON object, no prose, no code fences:
-{ "answer": string, "revisedSteps": string[] (optional) }`;
+Return the result by calling the "respond" tool.`;
+
+const SCHEMA: ObjectSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['answer'],
+  properties: {
+    answer: { type: 'string' },
+    revisedSteps: { type: 'array', items: { type: 'string' } },
+  },
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -74,9 +83,10 @@ Deno.serve(async (req) => {
   ].join('\n');
 
   try {
-    const reply = await callClaudeJson<CookReply>({
+    const reply = await callClaudeStructured<CookReply>({
       system: SYSTEM,
-      maxTokens: 700,
+      schema: SCHEMA,
+      maxTokens: 900,
       content,
     });
 

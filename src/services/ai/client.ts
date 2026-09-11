@@ -10,14 +10,24 @@
  * higher-level services return canned data without ever calling this.
  */
 
+import { IS_MOCK, SUPABASE_ANON_KEY, SUPABASE_URL } from '../env';
 import { AiError } from '../types';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+export { IS_MOCK };
 
-export const IS_MOCK = !SUPABASE_URL || !SUPABASE_ANON_KEY;
-
-const TIMEOUT_MS = 20000;
+/**
+ * Per-endpoint request timeouts. These are non-streaming Claude calls made from
+ * an Edge Function, so the client waits for the whole model response in one go.
+ * `recommend` generates a batch of 5-6 full recipes (~5k output tokens) and
+ * routinely takes 30-40s; the others are much shorter. The timeout only trips
+ * on a genuinely slow server — a real network failure rejects `fetch`
+ * immediately regardless — so these are deliberately generous.
+ */
+const TIMEOUT_MS: Record<'vision' | 'recommend' | 'cook', number> = {
+  vision: 45000,
+  recommend: 75000,
+  cook: 45000,
+};
 
 export async function invokeFunction<T>(
   name: 'vision' | 'recommend' | 'cook',
@@ -31,7 +41,7 @@ export async function invokeFunction<T>(
   }
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS[name]);
 
   let res: Response;
   try {
@@ -48,7 +58,7 @@ export async function invokeFunction<T>(
   } catch (err) {
     clearTimeout(timer);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new AiError('timeout', 'The request took too long. Check your connection and try again.');
+      throw new AiError('timeout', 'The assistant is taking longer than usual. Try again in a moment.');
     }
     throw new AiError('network', 'No connection. Check your internet and try again.');
   }

@@ -14,7 +14,26 @@ export type Ingredient = {
   confidence?: Confidence;
 };
 
-export type Difficulty = 'easy' | 'moderate' | 'more effort';
+export type Difficulty = 'easy' | 'medium' | 'hard' | 'extra_hard';
+
+export type DietaryTag =
+  | 'vegetarian'
+  | 'vegan'
+  | 'gluten_free'
+  | 'dairy_free'
+  | 'nut_allergy'
+  | 'shellfish_allergy'
+  | 'halal'
+  | 'kosher'
+  | 'low_carb'
+  | 'pescatarian';
+
+export type Profile = {
+  id: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  dietaryTags: DietaryTag[];
+};
 
 export type Recommendation = {
   id: string;
@@ -33,6 +52,37 @@ export type Recommendation = {
   reason: string;
   /** initial step-by-step cooking plan, short imperative sentences */
   steps: string[];
+};
+
+/** A photo someone posted of a dish they cooked or ordered, with where they made it. */
+export type Post = {
+  id: string;
+  /** null for bot-seeded posts */
+  userId: string | null;
+  isSeed: boolean;
+  authorName: string;
+  authorAvatarUrl: string | null;
+  recipeName: string | null;
+  difficulty: Difficulty | null;
+  photoUrl: string;
+  caption: string | null;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  ratingCount: number;
+  avgRating: number | null;
+};
+
+/**
+ * Map viewport. Mirrors react-native-maps' `Region` shape, redeclared here so
+ * code that only needs the type never has to import the native-only module
+ * (which fails to bundle for web).
+ */
+export type MapRegion = {
+  latitude: number;
+  longitude: number;
+  latitudeDelta: number;
+  longitudeDelta: number;
 };
 
 export type ChatTurn = {

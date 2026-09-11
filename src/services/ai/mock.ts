@@ -67,7 +67,7 @@ const POOL: Omit<Recommendation, 'id'>[] = [
     name: 'One-Pan Chicken & Rice',
     description:
       'Comforting skillet of seasoned chicken and rice with onion and tomato, everything in one pot.',
-    difficulty: 'moderate',
+    difficulty: 'medium',
     prepTime: 10,
     cookTime: 25,
     requiredIngredients: ['Chicken breast', 'Onion', 'Tomatoes'],
@@ -104,19 +104,66 @@ const POOL: Omit<Recommendation, 'id'>[] = [
       'Press and toast 1 minute per side, add hot sauce, serve.',
     ],
   },
+  {
+    name: 'Stuffed Chicken with Tomato Reduction',
+    description:
+      'Pan-seared chicken breast stuffed with cheese and onion, finished with a hand-reduced tomato sauce.',
+    difficulty: 'hard',
+    prepTime: 20,
+    cookTime: 30,
+    requiredIngredients: ['Chicken breast', 'Cheddar cheese', 'Onion', 'Tomatoes'],
+    missingIngredients: ['Kitchen twine or toothpicks'],
+    pans: 2,
+    reason:
+      'For when you want to slow down and actually cook something — more knife work and timing, but a restaurant-style result from what you already have.',
+    steps: [
+      'Finely chop the onion and set half aside for the sauce.',
+      'Butterfly the chicken breast and stuff with cheese and half the onion; secure with toothpicks.',
+      'Sear the chicken in an oiled pan 4–5 minutes per side until golden, then set aside covered.',
+      'In the same pan, soften the remaining onion, add chopped tomatoes and simmer 10 minutes, mashing as it reduces.',
+      'Slice the chicken to check the centre is cooked through; return briefly to the pan if not.',
+      'Spoon the reduction over the sliced chicken and serve.',
+    ],
+  },
+  {
+    name: 'Slow-Braised Chicken Ragu',
+    description:
+      'Deeply savoury shredded chicken simmered low and slow in a rich tomato-onion base, built in stages.',
+    difficulty: 'extra_hard',
+    prepTime: 20,
+    cookTime: 90,
+    requiredIngredients: ['Chicken breast', 'Onion', 'Tomatoes', 'Cheddar cheese'],
+    missingIngredients: ['Tomato paste', 'Red wine or extra stock'],
+    pans: 2,
+    reason:
+      'The full-effort option: a long, hands-off braise that rewards patience with a sauce you build in layers.',
+    steps: [
+      'Dice the onion finely and sear the chicken whole in a heavy pot until deeply browned on all sides.',
+      'Remove the chicken, soften the onion in the same pot, then stir in tomato paste and cook 2 minutes.',
+      'Add the tomatoes and a splash of wine or stock, scraping up the browned bits.',
+      'Return the chicken, cover, and simmer on low 60–75 minutes, checking and stirring occasionally.',
+      'Shred the chicken directly in the pot once fork-tender, discarding any bones.',
+      'Simmer uncovered 10 more minutes to thicken, taste and adjust seasoning.',
+      'Finish with grated cheese over the top and serve.',
+    ],
+  },
 ];
 
-let mockCallCount = 0;
+let mockBatchCount = 0;
 
-export function mockRecommendation(rejected: string[]): Recommendation {
-  // Pick the first pool item whose name isn't already rejected; cycle if all used.
-  const available = POOL.filter(
+/** Returns every pool item that isn't rejected (and matches difficulty, if given) as one batch. */
+export function mockRecommendationBatch(
+  rejected: string[],
+  difficulty?: Recommendation['difficulty'],
+): Recommendation[] {
+  mockBatchCount += 1;
+  const notRejected = POOL.filter(
     (r) => !rejected.some((x) => x.toLowerCase() === r.name.toLowerCase()),
   );
-  const chosen = (available.length > 0 ? available : POOL)[
-    mockCallCount++ % (available.length > 0 ? available.length : POOL.length)
-  ];
-  return { ...chosen, id: `mock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}` };
+  const scoped = difficulty ? notRejected.filter((r) => r.difficulty === difficulty) : notRejected;
+  const pool = scoped.length > 0 ? scoped : notRejected.length > 0 ? notRejected : POOL;
+
+  return pool.map((r, i) => ({ ...r, id: `mock-${Date.now()}-${mockBatchCount}-${i}` }));
 }
 
 export function mockCookingAnswer(userMessage: string): {

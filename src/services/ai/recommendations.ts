@@ -1,15 +1,15 @@
 /**
- * Recommendation AI task: confirmed ingredients (+ rejected suggestions) -> ONE
- * meal the user is most likely to actually want to eat.
+ * Recommendation AI task: confirmed ingredients (+ rejected suggestions) -> a
+ * batch of diverse meals for the swipe deck.
  *
- * This is a decision-reduction engine, not a recipe search. It returns a single
- * Recommendation. "Not what I want" calls it again with a growing `rejected`
- * list so the model steers away from what was turned down.
+ * One call returns several options (optionally scoped to one difficulty
+ * tier). Swiping a card away adds its name to the growing `rejected` list so
+ * the next batch steers away from it.
  */
 
-import type { Ingredient, Recommendation } from '../types';
+import type { Difficulty, Ingredient, Recommendation } from '../types';
 import { IS_MOCK, invokeFunction } from './client';
-import { mockRecommendation } from './mock';
+import { mockRecommendationBatch } from './mock';
 
 let counter = 0;
 function makeId() {
@@ -18,23 +18,29 @@ function makeId() {
 }
 
 type RawRecommendation = Omit<Recommendation, 'id'>;
+type RawBatch = { recommendations: RawRecommendation[] };
 
-export async function getRecommendation(
+export async function getRecommendationBatch(
   ingredients: Ingredient[],
   rejected: string[],
-): Promise<Recommendation> {
+  /** the signed-in user's dietary tags, if any — treated as hard constraints server-side */
+  dietaryTags: string[] = [],
+  difficulty?: Difficulty,
+): Promise<Recommendation[]> {
   const names = ingredients.map((i) => i.name).filter(Boolean);
 
   if (IS_MOCK) {
-    return mockDelay(mockRecommendation(rejected), 1100);
+    return mockDelay(mockRecommendationBatch(rejected, difficulty), 1100);
   }
 
-  const raw = await invokeFunction<RawRecommendation>('recommend', {
+  const raw = await invokeFunction<RawBatch>('recommend', {
     ingredients: names,
     rejected,
+    dietaryTags,
+    difficulty,
   });
 
-  return normalise(raw);
+  return (raw.recommendations ?? []).map(normalise);
 }
 
 function normalise(raw: RawRecommendation): Recommendation {

@@ -1,17 +1,28 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
+import { AvatarButton } from '../src/components/AvatarButton';
 import { Button } from '../src/components/Button';
 import { Body, Heading } from '../src/components/Heading';
 import { Screen } from '../src/components/Screen';
 import { IS_MOCK } from '../src/services/ai/client';
+import { useAuth } from '../src/store/auth';
 import { colors, spacing } from '../src/theme';
 
 export default function Home() {
   const router = useRouter();
+  const status = useAuth((s) => s.status);
+  const profile = useAuth((s) => s.profile);
 
   return (
     <Screen center>
+      <View style={styles.topBar}>
+        <AvatarButton
+          name={profile?.displayName}
+          onPress={() => router.push(status === 'signedIn' ? '/profile' : '/login')}
+        />
+      </View>
+
       <View style={styles.hero}>
         <Heading level="display">What are we eating?</Heading>
         <Body muted style={styles.sub}>
@@ -30,6 +41,11 @@ export default function Home() {
           variant="ghost"
           onPress={() => router.push('/ingredients')}
         />
+        <Button
+          label="See what others are cooking →"
+          variant="ghost"
+          onPress={() => router.push('/discover')}
+        />
       </View>
 
       {IS_MOCK && (
@@ -42,6 +58,7 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  topBar: { position: 'absolute', top: spacing.md, right: spacing.lg, zIndex: 1 },
   hero: { gap: spacing.md, marginBottom: spacing.xxl },
   sub: { fontSize: 18 },
   actions: { gap: spacing.md },

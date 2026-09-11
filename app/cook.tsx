@@ -253,7 +253,12 @@ export default function Cook() {
           </View>
         )}
 
-        {finished && <Button label="Back to home" onPress={leaveHome} />}
+        {finished && (
+          <View style={styles.finishedActions}>
+            <Button label="Share a photo of it" onPress={() => router.push('/post-meal')} />
+            <Button label="Back to home" variant="secondary" onPress={leaveHome} />
+          </View>
+        )}
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -306,4 +311,5 @@ const styles = StyleSheet.create({
   sendText: { color: colors.onAccent, fontSize: 24, fontWeight: '800' },
   bottomRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   doneBtnWrap: { flex: 1 },
+  finishedActions: { gap: spacing.sm },
 });

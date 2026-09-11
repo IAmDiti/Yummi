@@ -8,7 +8,7 @@
  *  - if it can't find enough, return a warning instead of guessing
  */
 
-import { callClaudeJson } from '../_shared/anthropic.ts';
+import { callClaudeStructured, type ObjectSchema } from '../_shared/anthropic.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
@@ -21,11 +21,7 @@ type VisionResult = {
 
 const SYSTEM = `You are the vision step of a cooking app. The user photographs the inside of their fridge and you list the food they have.
 
-Return ONLY a JSON object, no prose, no code fences:
-{
-  "ingredients": [{ "name": string, "confidence": "confident" | "uncertain" }],
-  "warning": string (optional)
-}
+Return the result by calling the "respond" tool.
 
 Rules:
 - List only edible food and drink items and clear cooking staples you can actually see.
@@ -33,7 +29,28 @@ Rules:
 - "confident" = clearly identifiable. "uncertain" = partly hidden, ambiguous, or you are guessing from a container.
 - NEVER include an item you cannot see. Do not assume common staples are present.
 - Ignore non-food objects (shelves, bottles of cleaning product, magnets, hands).
-- If the image is too dark / blurry / closed / empty to identify at least 2 confident food items, return {"ingredients": [], "warning": "I couldn't identify enough ingredients. Try taking a photo with the fridge more open and the food visible."}`;
+- If the image is too dark / blurry / closed / empty to identify at least 2 confident food items, return an empty "ingredients" list and set "warning" to "I couldn't identify enough ingredients. Try taking a photo with the fridge more open and the food visible."`;
+
+const SCHEMA: ObjectSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['ingredients'],
+  properties: {
+    ingredients: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['name', 'confidence'],
+        properties: {
+          name: { type: 'string' },
+          confidence: { type: 'string', enum: ['confident', 'uncertain'] },
+        },
+      },
+    },
+    warning: { type: 'string' },
+  },
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -55,9 +72,10 @@ Deno.serve(async (req) => {
   const mediaType = body.mediaType ?? 'image/jpeg';
 
   try {
-    const result = await callClaudeJson<VisionResult>({
+    const result = await callClaudeStructured<VisionResult>({
       system: SYSTEM,
-      maxTokens: 900,
+      schema: SCHEMA,
+      maxTokens: 1200,
       content: [
         { type: 'image', source: { type: 'base64', media_type: mediaType, data: imageBase64 } },
         { type: 'text', text: 'List the food items you can see in this fridge.' },

@@ -1,22 +1,31 @@
 /**
- * Recommendation AI — ingredients (+ rejected suggestions) -> ONE meal.
+ * Recommendation AI — ingredients (+ rejected suggestions) -> a batch of
+ * diverse meals for the swipe deck.
  *
- * This is a decision-reduction engine. It returns exactly one recommendation.
- * The `rejected` list grows every time the user taps "Not what I want"; the
- * model must move away from those and gradually narrow toward something the
- * user actually wants.
+ * One model call returns 5-6 options spanning different difficulty tiers (or
+ * all matching a single requested tier), rather than round-tripping once per
+ * card. The `rejected` list grows every time a card is swiped away; the model
+ * must avoid those and keep the batch feeling fresh.
  */
 
-import { callClaudeJson } from '../_shared/anthropic.ts';
+import { callClaudeStructured, type ObjectSchema } from '../_shared/anthropic.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { describeDietaryTags } from '../_shared/dietary.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
-type Body = { ingredients?: string[]; rejected?: string[] };
+type Difficulty = 'easy' | 'medium' | 'hard' | 'extra_hard';
+
+type Body = {
+  ingredients?: string[];
+  rejected?: string[];
+  dietaryTags?: string[];
+  difficulty?: string;
+};
 
 type Recommendation = {
   name: string;
   description: string;
-  difficulty: 'easy' | 'moderate' | 'more effort';
+  difficulty: Difficulty;
   prepTime: number;
   cookTime: number;
   requiredIngredients: string[];
@@ -26,25 +35,66 @@ type Recommendation = {
   steps: string[];
 };
 
-const SYSTEM = `You are a personal food assistant inside a mobile app. The user is hungry and does not want to think. Your job is DECISION REDUCTION: recommend the ONE meal they are most likely to actually want to eat right now — not every possible recipe.
+type RawBatch = { recommendations?: unknown[] };
 
-Return ONLY a JSON object, no prose, no code fences:
-{
-  "name": string,
-  "description": string,            // one appetising sentence
-  "difficulty": "easy" | "moderate" | "more effort",
-  "prepTime": number,               // minutes, integer
-  "cookTime": number,               // minutes, integer
-  "requiredIngredients": string[],  // what this meal needs
-  "missingIngredients": string[],   // subset of required that the user did NOT list
-  "pans": number | null,            // pans/pots/dishes used, null if unclear
-  "reason": string,                 // "why I picked this" — friendly, 1-2 sentences, reference their ingredients
-  "steps": string[]                 // 4-10 short imperative cooking steps
-}
+const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard', 'extra_hard'];
 
-Consider: ingredients on hand, cooking time, difficulty, number of pans, flavour profile, and whether it is practical. Prefer meals that need few or no missing ingredients. It is fine to assume basic staples (salt, pepper, oil, water, butter) unless they were explicitly rejected.
+const SYSTEM = `You are a personal food assistant inside a mobile app. The user is hungry and wants a handful of good meal options to swipe through — not an exhaustive recipe database, and not needless duplicates of the same idea.
 
-If a "rejected" list is provided, you MUST NOT recommend any of those dishes or a near-identical variant. Treat each rejection as a signal: change something meaningful (different protein, different format, different cuisine, lighter/heavier, faster/slower). With more rejections, narrow further toward a simple crowd-pleaser.`;
+Return the result by calling the "respond" tool. Field notes:
+- description: one appetising sentence.
+- prepTime / cookTime: whole minutes.
+- requiredIngredients: everything the meal needs. missingIngredients: the subset of those the user did NOT list.
+- pans: pans/pots/dishes used, or null if unclear.
+- reason: "why I picked this" — friendly, 1-2 sentences, referencing their ingredients.
+- steps: 4-10 short imperative cooking steps.
+
+Return 5-6 meals, each genuinely different from the others (different protein, format, or cuisine — not the same dish with one ingredient swapped). Unless a single difficulty tier is requested, spread the batch across easy/medium/hard/extra_hard rather than clustering on one tier. Consider: ingredients on hand, cooking time, number of pans, flavour profile, and whether it is practical. Prefer meals that need few or no missing ingredients. It is fine to assume basic staples (salt, pepper, oil, water, butter) unless they were explicitly rejected.
+
+If a "rejected" list is provided, you MUST NOT include any of those dishes or a near-identical variant anywhere in the batch.
+
+If dietary restrictions are given, they are HARD CONSTRAINTS, not preferences — every recommendation must fully comply, no exceptions, even if that means ignoring some of the user's ingredients. If nothing fully compliant can be made from the given ingredients, still return compliant meals using reasonable additional pantry staples rather than violating a restriction.
+
+If a specific difficulty tier is requested, EVERY recommendation in the batch must be exactly that tier.`;
+
+const SCHEMA: ObjectSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['recommendations'],
+  properties: {
+    recommendations: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: [
+          'name',
+          'description',
+          'difficulty',
+          'prepTime',
+          'cookTime',
+          'requiredIngredients',
+          'missingIngredients',
+          'pans',
+          'reason',
+          'steps',
+        ],
+        properties: {
+          name: { type: 'string' },
+          description: { type: 'string' },
+          difficulty: { type: 'string', enum: DIFFICULTIES },
+          prepTime: { type: 'integer' },
+          cookTime: { type: 'integer' },
+          requiredIngredients: { type: 'array', items: { type: 'string' } },
+          missingIngredients: { type: 'array', items: { type: 'string' } },
+          pans: { type: ['integer', 'null'] },
+          reason: { type: 'string' },
+          steps: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+  },
+};
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -62,6 +112,10 @@ Deno.serve(async (req) => {
 
   const ingredients = (body.ingredients ?? []).map((s) => String(s).trim()).filter(Boolean);
   const rejected = (body.rejected ?? []).map((s) => String(s).trim()).filter(Boolean);
+  const dietaryTags = (body.dietaryTags ?? []).map((s) => String(s).trim()).filter(Boolean);
+  const difficulty = DIFFICULTIES.includes(body.difficulty as Difficulty)
+    ? (body.difficulty as Difficulty)
+    : undefined;
 
   if (ingredients.length === 0) {
     return json({ error: 'Add at least one ingredient first.' }, 400);
@@ -70,45 +124,39 @@ Deno.serve(async (req) => {
   const userMsg = [
     `Ingredients I have: ${ingredients.join(', ')}.`,
     rejected.length
-      ? `Do NOT suggest these — I already rejected them: ${rejected.join(', ')}. Suggest something clearly different.`
+      ? `Do NOT suggest these — I already rejected them: ${rejected.join(', ')}. Suggest options clearly different from all of these.`
       : '',
-    'Recommend one meal.',
+    dietaryTags.length
+      ? `Dietary restrictions (HARD CONSTRAINTS, must comply): ${describeDietaryTags(dietaryTags).join(', ')}.`
+      : '',
+    difficulty ? `Only include meals at this difficulty tier: ${difficulty}.` : '',
+    'Recommend 5-6 diverse meal options.',
   ]
     .filter(Boolean)
     .join('\n');
 
   try {
-    const rec = await callClaudeJson<Recommendation>({
+    const raw = await callClaudeStructured<RawBatch>({
       system: SYSTEM,
-      maxTokens: 1400,
+      schema: SCHEMA,
+      maxTokens: 8000,
       content: userMsg,
     });
 
-    // Light validation / defaults so the client always gets a usable shape.
-    const clean: Recommendation = {
-      name: String(rec.name ?? 'A simple meal').trim(),
-      description: String(rec.description ?? '').trim(),
-      difficulty:
-        rec.difficulty === 'moderate' || rec.difficulty === 'more effort'
-          ? rec.difficulty
-          : 'easy',
-      prepTime: Math.max(0, Math.round(Number(rec.prepTime) || 0)),
-      cookTime: Math.max(0, Math.round(Number(rec.cookTime) || 0)),
-      requiredIngredients: asStringArray(rec.requiredIngredients),
-      missingIngredients: asStringArray(rec.missingIngredients),
-      pans:
-        rec.pans === null || rec.pans === undefined || Number.isNaN(Number(rec.pans))
-          ? null
-          : Math.max(1, Math.round(Number(rec.pans))),
-      reason: String(rec.reason ?? '').trim(),
-      steps: asStringArray(rec.steps),
-    };
+    let list = (Array.isArray(raw.recommendations) ? raw.recommendations : [])
+      .map(cleanRecommendation)
+      .filter((r) => r.steps.length > 0);
 
-    if (clean.steps.length === 0) {
-      return json({ error: 'The assistant could not plan that meal. Try again.' }, 502);
+    if (difficulty) {
+      const matching = list.filter((r) => r.difficulty === difficulty);
+      if (matching.length > 0) list = matching;
     }
 
-    return json(clean);
+    if (list.length === 0) {
+      return json({ error: 'The assistant could not plan any meals. Try again.' }, 502);
+    }
+
+    return json({ recommendations: list });
   } catch (err) {
     console.error('recommend error', err);
     return json(
@@ -117,6 +165,26 @@ Deno.serve(async (req) => {
     );
   }
 });
+
+// Light validation / defaults so the client always gets a usable shape.
+function cleanRecommendation(rec: unknown): Recommendation {
+  const r = (rec ?? {}) as Record<string, unknown>;
+  return {
+    name: String(r.name ?? 'A simple meal').trim(),
+    description: String(r.description ?? '').trim(),
+    difficulty: DIFFICULTIES.includes(r.difficulty as Difficulty) ? (r.difficulty as Difficulty) : 'easy',
+    prepTime: Math.max(0, Math.round(Number(r.prepTime) || 0)),
+    cookTime: Math.max(0, Math.round(Number(r.cookTime) || 0)),
+    requiredIngredients: asStringArray(r.requiredIngredients),
+    missingIngredients: asStringArray(r.missingIngredients),
+    pans:
+      r.pans === null || r.pans === undefined || Number.isNaN(Number(r.pans))
+        ? null
+        : Math.max(1, Math.round(Number(r.pans))),
+    reason: String(r.reason ?? '').trim(),
+    steps: asStringArray(r.steps),
+  };
+}
 
 function asStringArray(v: unknown): string[] {
   return Array.isArray(v) ? v.map((x) => String(x).trim()).filter(Boolean) : [];
