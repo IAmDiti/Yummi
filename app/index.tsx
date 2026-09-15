@@ -13,12 +13,14 @@ export default function Home() {
   const router = useRouter();
   const status = useAuth((s) => s.status);
   const profile = useAuth((s) => s.profile);
+  const email = useAuth((s) => s.email);
 
   return (
     <Screen center>
       <View style={styles.topBar}>
         <AvatarButton
           name={profile?.displayName}
+          email={email}
           onPress={() => router.push(status === 'signedIn' ? '/profile' : '/login')}
         />
       </View>

@@ -15,7 +15,7 @@ type Props = {
 
 export function Screen({ children, center, style, bleed }: Props) {
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+    <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
       <View
         style={[
           styles.body,

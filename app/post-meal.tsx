@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -271,37 +272,44 @@ export default function PostMeal() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        {photoUri && (
-          <View style={styles.previewWrapSmall}>
-            <Image source={{ uri: photoUri }} style={styles.preview} resizeMode="cover" />
+        <ScrollView
+          contentContainerStyle={styles.composeScroll}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {photoUri && (
+            <View style={styles.previewWrapSmall}>
+              <Image source={{ uri: photoUri }} style={styles.preview} resizeMode="cover" />
+            </View>
+          )}
+
+          <View style={styles.recipeChip}>
+            <Text style={styles.recipeChipText}>{cooking.recommendation.name}</Text>
           </View>
-        )}
 
-        <View style={styles.recipeChip}>
-          <Text style={styles.recipeChipText}>{cooking.recommendation.name}</Text>
-        </View>
+          <Heading level="heading" style={styles.captionLabel}>
+            Add a caption
+          </Heading>
+          <TextInput
+            value={caption}
+            onChangeText={setCaption}
+            placeholder="How did it turn out?"
+            placeholderTextColor={colors.textMuted}
+            style={styles.captionInput}
+            multiline
+          />
 
-        <Heading level="heading" style={styles.captionLabel}>
-          Add a caption
-        </Heading>
-        <TextInput
-          value={caption}
-          onChangeText={setCaption}
-          placeholder="How did it turn out?"
-          placeholderTextColor={colors.textMuted}
-          style={styles.captionInput}
-          multiline
-        />
-
-        <Button label="Post" onPress={submitPost} />
-        <Button label="Skip, don’t post publicly" variant="ghost" onPress={goHomeWithoutPosting} />
+          <Button label="Post" onPress={submitPost} />
+          <Button label="Skip, don’t post publicly" variant="ghost" onPress={goHomeWithoutPosting} />
+        </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, gap: spacing.md },
+  flex: { flex: 1 },
+  composeScroll: { flexGrow: 1, gap: spacing.md, paddingBottom: spacing.lg },
   cameraWrap: { flex: 1, overflow: 'hidden' },
   cameraOverlay: {
     position: 'absolute',

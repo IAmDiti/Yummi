@@ -2,8 +2,10 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +15,7 @@ import {
 import { Button } from '../src/components/Button';
 import { Body, Heading } from '../src/components/Heading';
 import { Screen } from '../src/components/Screen';
+import { PRIVACY_POLICY_URL } from '../src/services/legal';
 import { useAuth } from '../src/store/auth';
 import { colors, font, radius, spacing } from '../src/theme';
 
@@ -101,100 +104,114 @@ export default function Login() {
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View style={styles.hero}>
-          <Heading level="title">{isSignup ? 'Create your account' : 'Welcome back'}</Heading>
-          <Body muted>
-            {isSignup
-              ? 'Sign up to post dishes, rate meals, and save dietary preferences.'
-              : 'Sign in to Yummi.'}
-          </Body>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.field}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              value={email}
-              onChangeText={setEmail}
-              placeholder="you@example.com"
-              placeholderTextColor={colors.textMuted}
-              style={styles.input}
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              keyboardType="email-address"
-              returnKeyType="next"
-              accessibilityLabel="Email address"
-            />
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.hero}>
+            <Heading level="title">{isSignup ? 'Create your account' : 'Welcome back'}</Heading>
+            <Body muted>
+              {isSignup
+                ? 'Sign up to post dishes, rate meals, and save dietary preferences.'
+                : 'Sign in to Yummi.'}
+            </Body>
           </View>
 
-          <View style={styles.field}>
-            <Text style={styles.label}>Password</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
-                placeholderTextColor={colors.textMuted}
-                style={[styles.input, styles.passwordInput]}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete={isSignup ? 'new-password' : 'current-password'}
-                secureTextEntry={!showPassword}
-                returnKeyType={isSignup ? 'next' : 'go'}
-                onSubmitEditing={isSignup ? undefined : submit}
-                accessibilityLabel="Password"
-              />
-              <Pressable
-                onPress={() => setShowPassword((v) => !v)}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
-                style={styles.reveal}
-              >
-                <Text style={styles.revealText}>{showPassword ? 'Hide' : 'Show'}</Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {isSignup && (
+          <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Confirm password</Text>
+              <Text style={styles.label}>Email</Text>
               <TextInput
-                value={confirm}
-                onChangeText={setConfirm}
-                placeholder="Re-enter your password"
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
                 autoCapitalize="none"
                 autoCorrect={false}
-                autoComplete="new-password"
-                secureTextEntry={!showPassword}
-                returnKeyType="go"
-                onSubmitEditing={submit}
-                accessibilityLabel="Confirm password"
+                autoComplete="email"
+                keyboardType="email-address"
+                returnKeyType="next"
+                accessibilityLabel="Email address"
               />
             </View>
-          )}
 
-          {!!errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
+            <View style={styles.field}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.passwordRow}>
+                <TextInput
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+                  placeholderTextColor={colors.textMuted}
+                  style={[styles.input, styles.passwordInput]}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
+                  secureTextEntry={!showPassword}
+                  returnKeyType={isSignup ? 'next' : 'go'}
+                  onSubmitEditing={isSignup ? undefined : submit}
+                  accessibilityLabel="Password"
+                />
+                <Pressable
+                  onPress={() => setShowPassword((v) => !v)}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  style={styles.reveal}
+                >
+                  <Text style={styles.revealText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                </Pressable>
+              </View>
+            </View>
 
-          <Button
-            label={isSignup ? 'Create account' : 'Sign in'}
-            onPress={submit}
-            loading={busy}
-            disabled={!cleanEmail || !password || (isSignup && !confirm)}
-          />
-        </View>
+            {isSignup && (
+              <View style={styles.field}>
+                <Text style={styles.label}>Confirm password</Text>
+                <TextInput
+                  value={confirm}
+                  onChangeText={setConfirm}
+                  placeholder="Re-enter your password"
+                  placeholderTextColor={colors.textMuted}
+                  style={styles.input}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="new-password"
+                  secureTextEntry={!showPassword}
+                  returnKeyType="go"
+                  onSubmitEditing={submit}
+                  accessibilityLabel="Confirm password"
+                />
+              </View>
+            )}
 
-        <Pressable onPress={switchMode} hitSlop={8} accessibilityRole="button">
-          <Text style={styles.switch}>
-            {isSignup ? 'Already have an account? ' : 'New to Yummi? '}
-            <Text style={styles.switchStrong}>{isSignup ? 'Sign in' : 'Create one'}</Text>
-          </Text>
-        </Pressable>
+            {!!errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
 
-        <Button label="Continue without an account" variant="ghost" onPress={() => router.back()} />
+            <Button
+              label={isSignup ? 'Create account' : 'Sign in'}
+              onPress={submit}
+              loading={busy}
+              disabled={!cleanEmail || !password || (isSignup && !confirm)}
+            />
+          </View>
+
+          <Pressable onPress={switchMode} hitSlop={8} accessibilityRole="button">
+            <Text style={styles.switch}>
+              {isSignup ? 'Already have an account? ' : 'New to Yummi? '}
+              <Text style={styles.switchStrong}>{isSignup ? 'Sign in' : 'Create one'}</Text>
+            </Text>
+          </Pressable>
+
+          <Button label="Continue without an account" variant="ghost" onPress={() => router.back()} />
+
+          <Pressable
+            onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+            hitSlop={8}
+            accessibilityRole="link"
+          >
+            <Text style={styles.privacyLink}>Privacy Policy</Text>
+          </Pressable>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Screen>
   );
@@ -219,7 +236,13 @@ function authMessage(err: unknown, isSignup: boolean): string {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, justifyContent: 'center', gap: spacing.xl },
+  flex: { flex: 1 },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    gap: spacing.xl,
+    paddingVertical: spacing.lg,
+  },
   hero: { gap: spacing.sm },
   form: { gap: spacing.md },
   field: { gap: spacing.xs },
@@ -241,6 +264,12 @@ const styles = StyleSheet.create({
   error: { color: colors.danger, fontSize: font.small },
   switch: { textAlign: 'center', fontSize: font.small, color: colors.textMuted },
   switchStrong: { color: colors.accent, fontWeight: '800' },
+  privacyLink: {
+    textAlign: 'center',
+    fontSize: font.small,
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+  },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'stretch', gap: spacing.md },
   centerText: { textAlign: 'center' },
 });

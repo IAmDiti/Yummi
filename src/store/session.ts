@@ -29,8 +29,16 @@ export function newIngredientId() {
 
 type SessionState = {
   ingredients: Ingredient[];
-  /** the swipe deck — queue[0] is the top card */
-  recommendationQueue: Recommendation[];
+  /**
+   * Every recommendation generated this "find something to eat" session that
+   * hasn't been swiped away yet, across ALL difficulty tiers — not just the
+   * active one. The recommend screen derives its visible deck by filtering
+   * this client-side, so switching the difficulty tab is instant and never
+   * calls the AI again for a tier that's already cached here. Only
+   * `appendToPool` (a real generation, used for the first load, an
+   * unseen tier, or a background top-up) spends tokens.
+   */
+  pool: Recommendation[];
   difficultyFilter: Difficulty | null;
   rejected: string[];
   cooking: CookingSession | null;
@@ -44,15 +52,13 @@ type SessionState = {
   clearIngredients: () => void;
 
   // recommendations
-  /** replaces the whole deck (first load, or the difficulty filter changed) */
-  setQueue: (list: Recommendation[]) => void;
-  /** tops up the deck with a prefetched batch, skipping names already seen */
-  appendToQueue: (list: Recommendation[]) => void;
+  /** merges a freshly generated batch into the pool, skipping names already pooled or rejected */
+  appendToPool: (list: Recommendation[]) => void;
   setDifficultyFilter: (d: Difficulty | null) => void;
-  /** swipe left: drop the top card and remember it as rejected */
-  swipeReject: () => void;
-  /** swipe right: drop the top card and return it so the caller can start cooking it */
-  swipeAccept: () => Recommendation | null;
+  /** swipe left: drop the given card from the pool and remember it as rejected */
+  swipeReject: (id: string) => void;
+  /** swipe right: drop the given card from the pool and return it so the caller can start cooking it */
+  swipeAccept: (id: string) => Recommendation | null;
   resetRecommendations: () => void;
 
   // cooking
@@ -70,7 +76,7 @@ export const useSession = create<SessionState>()(
   persist(
     (set, get) => ({
       ingredients: [],
-      recommendationQueue: [],
+      pool: [],
       difficultyFilter: null,
       rejected: [],
       cooking: null,
@@ -110,41 +116,35 @@ export const useSession = create<SessionState>()(
 
       clearIngredients: () => set({ ingredients: [] }),
 
-      setQueue: (list) => set({ recommendationQueue: list }),
-
-      appendToQueue: (list) =>
+      appendToPool: (list) =>
         set((s) => {
-          const seen = new Set([
-            ...s.recommendationQueue.map((r) => norm(r.name)),
-            ...s.rejected.map(norm),
-          ]);
+          const seen = new Set([...s.pool.map((r) => norm(r.name)), ...s.rejected.map(norm)]);
           const fresh = list.filter((r) => !seen.has(norm(r.name)));
-          return fresh.length ? { recommendationQueue: [...s.recommendationQueue, ...fresh] } : s;
+          return fresh.length ? { pool: [...s.pool, ...fresh] } : s;
         }),
 
       setDifficultyFilter: (d) => set({ difficultyFilter: d }),
 
-      swipeReject: () =>
+      swipeReject: (id) =>
         set((s) => {
-          const [top, ...rest] = s.recommendationQueue;
-          if (!top) return s;
+          const card = s.pool.find((r) => r.id === id);
+          if (!card) return s;
           return {
-            recommendationQueue: rest,
-            rejected: s.rejected.some((r) => norm(r) === norm(top.name))
+            pool: s.pool.filter((r) => r.id !== id),
+            rejected: s.rejected.some((r) => norm(r) === norm(card.name))
               ? s.rejected
-              : [...s.rejected, top.name],
+              : [...s.rejected, card.name],
           };
         }),
 
-      swipeAccept: () => {
-        const [top, ...rest] = get().recommendationQueue;
-        if (!top) return null;
-        set({ recommendationQueue: rest });
-        return top;
+      swipeAccept: (id) => {
+        const card = get().pool.find((r) => r.id === id);
+        if (!card) return null;
+        set((s) => ({ pool: s.pool.filter((r) => r.id !== id) }));
+        return card;
       },
 
-      resetRecommendations: () =>
-        set({ recommendationQueue: [], rejected: [], difficultyFilter: null }),
+      resetRecommendations: () => set({ pool: [], rejected: [], difficultyFilter: null }),
 
       startCooking: (rec) =>
         set({
