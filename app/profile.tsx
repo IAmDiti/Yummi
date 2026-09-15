@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '../src/components/Button';
 import { Body, Heading } from '../src/components/Heading';
 import { Screen } from '../src/components/Screen';
 import { DIETARY_TAGS, DIETARY_TAG_LABEL } from '../src/services/dietary';
+import { PRIVACY_POLICY_URL } from '../src/services/legal';
 import type { DietaryTag } from '../src/services/types';
 import { useAuth } from '../src/store/auth';
 import { colors, font, radius, spacing } from '../src/theme';
@@ -17,10 +18,14 @@ export default function ProfileScreen() {
   const email = useAuth((s) => s.email);
   const updateProfile = useAuth((s) => s.updateProfile);
   const signOut = useAuth((s) => s.signOut);
+  const deleteAccount = useAuth((s) => s.deleteAccount);
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
   const [tags, setTags] = useState<DietaryTag[]>(profile?.dietaryTags ?? []);
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     setDisplayName(profile?.displayName ?? '');
@@ -53,6 +58,18 @@ export default function ProfileScreen() {
   const doSignOut = async () => {
     await signOut();
     router.replace('/');
+  };
+
+  const doDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      await deleteAccount();
+      router.replace('/');
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Could not delete your account. Try again.');
+      setDeleting(false);
+    }
   };
 
   if (status !== 'signedIn' || !profile) return <Screen />;
@@ -108,6 +125,54 @@ export default function ProfileScreen() {
             })}
           </View>
         </View>
+
+        <View style={[styles.card, styles.dangerCard]}>
+          <Text style={styles.cardLabel}>Delete account</Text>
+          {confirmingDelete ? (
+            <>
+              <Body style={styles.dangerText}>
+                This permanently deletes your account, profile, dish posts, photos, and ratings.
+                There’s no undo.
+              </Body>
+              {!!deleteError && <Text style={styles.error}>{deleteError}</Text>}
+              <Button
+                label="Yes, delete my account"
+                variant="danger"
+                onPress={doDeleteAccount}
+                loading={deleting}
+              />
+              <Button
+                label="Cancel"
+                variant="secondary"
+                onPress={() => {
+                  setConfirmingDelete(false);
+                  setDeleteError('');
+                }}
+                disabled={deleting}
+              />
+            </>
+          ) : (
+            <>
+              <Body muted style={styles.hint}>
+                Permanently deletes your account and everything tied to it. This can’t be undone.
+              </Body>
+              <Button
+                label="Delete my account"
+                variant="danger"
+                onPress={() => setConfirmingDelete(true)}
+              />
+            </>
+          )}
+        </View>
+
+        <Pressable
+          onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
+          hitSlop={8}
+          accessibilityRole="link"
+          style={styles.privacyLink}
+        >
+          <Text style={styles.privacyLinkText}>Privacy Policy</Text>
+        </Pressable>
       </ScrollView>
 
       <View style={styles.actions}>
@@ -163,5 +228,14 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.accent },
   chipText: { fontSize: font.small, color: colors.text },
   chipTextSelected: { color: colors.onAccent, fontWeight: '700' },
+  dangerCard: { borderColor: colors.danger },
+  dangerText: { color: colors.text },
+  error: { color: colors.danger, fontSize: font.small },
+  privacyLink: { alignItems: 'center', paddingTop: spacing.sm },
+  privacyLinkText: {
+    fontSize: font.small,
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+  },
   actions: { gap: spacing.sm, paddingTop: spacing.sm },
 });

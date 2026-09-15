@@ -42,6 +42,13 @@ type AuthState = {
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
   updateProfile: (patch: { displayName?: string; dietaryTags?: DietaryTag[] }) => Promise<void>;
+  /**
+   * Permanently deletes the signed-in user's account: the sign-in itself,
+   * their profile, dish posts, photos, and ratings — required by Google
+   * Play's account-deletion policy. Irreversible; leaves the caller signed
+   * out on success.
+   */
+  deleteAccount: () => Promise<void>;
 };
 
 let initialized = false;
@@ -135,6 +142,25 @@ export const useAuth = create<AuthState>()(
             .update({ display_name: next.displayName, dietary_tags: next.dietaryTags })
             .eq('id', current.id);
           if (error) throw error;
+        },
+
+        deleteAccount: async () => {
+          if (IS_MOCK) {
+            await mockDelay(undefined, 500);
+            set({ status: 'signedOut', userId: null, email: null, profile: null });
+            return;
+          }
+          const { error } = await supabase!.functions.invoke('delete-account', {
+            method: 'POST',
+          });
+          if (error) {
+            // supabase-js's FunctionsHttpError carries our JSON { error } body
+            // on `.context`, not on `.message` — surface the real reason.
+            const context = (error as { context?: Response }).context;
+            const body = await context?.json().catch(() => null);
+            throw new Error(body?.error || error.message);
+          }
+          set({ status: 'signedOut', userId: null, email: null, profile: null });
         },
       };
     },

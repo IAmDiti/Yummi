@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete Yummi Account</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Source+Sans+3:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #FFFFFF;
+    --surface: #F5F3EF;
+    --surface-alt: #ECE8E1;
+    --text: #1C1B1A;
+    --text-muted: #6B6862;
+    --border: #DED9D0;
+    --accent: #FF5A1F;
+    --accent-pressed: #E24A12;
+    --danger: #C0392B;
+    --danger-pressed: #9E2E22;
+    --danger-tint: #FBEBE9;
+    --success: #2E7D32;
+    --success-tint: #EAF4EB;
+    --on-accent: #FFFFFF;
+    --shadow: 0 1px 2px rgba(28, 27, 26, 0.06);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17140F;
+      --surface: #211D17;
+      --surface-alt: #2B2620;
+      --text: #F3EEE6;
+      --text-muted: #B4A99A;
+      --border: #3B3428;
+      --accent: #FF7A45;
+      --accent-pressed: #FF925F;
+      --danger: #E27364;
+      --danger-pressed: #EE8B7E;
+      --danger-tint: #3A2320;
+      --success: #6FBF7E;
+      --success-tint: #1E2E20;
+      --on-accent: #1C1206;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17140F;
+    --surface: #211D17;
+    --surface-alt: #2B2620;
+    --text: #F3EEE6;
+    --text-muted: #B4A99A;
+    --border: #3B3428;
+    --accent: #FF7A45;
+    --accent-pressed: #FF925F;
+    --danger: #E27364;
+    --danger-pressed: #EE8B7E;
+    --danger-tint: #3A2320;
+    --success: #6FBF7E;
+    --success-tint: #1E2E20;
+    --on-accent: #1C1206;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Source Sans 3", system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+    padding: 40px 20px 64px;
+    display: flex;
+    justify-content: center;
+  }
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .page { width: 100%; max-width: 460px; }
+
+  .masthead { margin-bottom: 28px; }
+  .wordmark {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: 22px;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(26px, 6vw, 32px);
+    line-height: 1.2;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .dek { color: var(--text-muted); margin: 0; }
+
+  .warning {
+    background: var(--danger-tint);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    margin: 22px 0;
+  }
+  .warning p { margin: 0; }
+  .warning ul { margin: 8px 0 0; padding-left: 20px; }
+  .warning li { margin-bottom: 4px; }
+  .warning strong { color: var(--danger); }
+
+  form { display: flex; flex-direction: column; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  label { font-size: 13px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .input-row { position: relative; display: flex; align-items: center; }
+  input[type="email"], input[type="password"], input[type="text"] {
+    width: 100%;
+    height: 50px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    padding: 0 16px;
+    font-size: 16px;
+    font-family: inherit;
+  }
+  input::placeholder { color: var(--text-muted); opacity: 0.8; }
+  .password-row input { padding-right: 66px; }
+  .reveal {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 13.5px;
+    cursor: pointer;
+    padding: 6px;
+  }
+
+  button.btn {
+    appearance: none;
+    border: none;
+    border-radius: 12px;
+    height: 52px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 15.5px;
+    cursor: pointer;
+    box-shadow: var(--shadow);
+  }
+  .btn-danger { background: var(--danger); color: #fff; }
+  .btn-danger:hover { background: var(--danger-pressed); }
+  .btn-secondary { background: var(--surface-alt); color: var(--text); }
+  .btn-secondary:hover { filter: brightness(0.97); }
+  button.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+  .btn-row { display: flex; flex-direction: column; gap: 10px; }
+
+  .confirm-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .confirm-panel p { margin: 0; }
+
+  .status {
+    border-radius: 12px;
+    padding: 14px 16px;
+    font-size: 15px;
+    display: none;
+  }
+  .status.show { display: block; }
+  .status.error { background: var(--danger-tint); color: var(--danger); }
+  .status.success { background: var(--success-tint); color: var(--success); }
+
+  .done {
+    display: none;
+    text-align: center;
+    padding: 32px 8px 8px;
+  }
+  .done.show { display: block; }
+  .done .mark {
+    width: 56px; height: 56px; border-radius: 999px;
+    background: var(--success-tint); color: var(--success);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; margin: 0 auto 16px;
+  }
+  .done h2 { font-family: "Fraunces", Georgia, serif; font-size: 22px; margin: 0 0 8px; }
+  .done p { color: var(--text-muted); margin: 0; }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 999px;
+    display: inline-block;
+    vertical-align: -3px;
+    margin-right: 8px;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) {
+    .spinner { animation: none; }
+  }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  footer p { margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div id="formView">
+    <div class="masthead">
+      <div class="wordmark">Yummi</div>
+      <h1>Delete your account</h1>
+      <p class="dek">For anyone who can't or doesn't want to do this from inside the app.</p>
+    </div>
+
+    <div class="warning">
+      <p><strong>This cannot be undone.</strong> Deleting your account immediately removes:</p>
+      <ul>
+        <li>Your sign-in, email, and profile</li>
+        <li>Your dietary preferences</li>
+        <li>Every dish photo and caption you've posted</li>
+        <li>Every rating you've given</li>
+      </ul>
+    </div>
+
+    <form id="deleteForm" autocomplete="on">
+      <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="input-row password-row">
+          <input id="password" name="password" type="password" placeholder="Your password" required autocomplete="current-password">
+          <button type="button" class="reveal" id="toggleReveal">Show</button>
+        </div>
+      </div>
+
+      <div id="status" class="status" role="alert"></div>
+
+      <div id="stepOne" class="btn-row">
+        <button type="button" id="beginDelete" class="btn btn-danger">Delete my account</button>
+      </div>
+
+      <div id="stepTwo" class="confirm-panel" style="display:none;">
+        <p>Deleting <strong id="confirmEmail"></strong> and everything tied to it — for good.</p>
+        <div class="btn-row">
+          <button type="submit" id="confirmDelete" class="btn btn-danger">Yes, permanently delete</button>
+          <button type="button" id="cancelDelete" class="btn btn-secondary">Cancel</button>
+        </div>
+      </div>
+    </form>
+
+    <footer>
+      <p>Can't sign in, or no longer have the app? Email <strong>ditidon@gmail.com</strong> and we'll delete your account manually.</p>
+      <p><a href="./privacy-policy.html">Read the Privacy Policy →</a></p>
+    </footer>
+  </div>
+
+  <div id="doneView" class="done">
+    <div class="mark">✓</div>
+    <h2>Your account is deleted</h2>
+    <p>Your sign-in, profile, posts, photos, and ratings have all been permanently removed.</p>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://kttsrhpmgmukaupkpwcx.supabase.co';
+  // Publishable "anon" key — safe to expose client-side; it can only do what
+  // Row Level Security and this specific edge function allow.
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0dHNyaHBtZ211a2F1cGtwd2N4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc3NDkxNDIsImV4cCI6MjEwMzMyNTE0Mn0.epe0O6q86-hSOqvR6syltrVNDTGQQYnTuS0jOu0mYXY';
+
+  const form = document.getElementById('deleteForm');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const toggleReveal = document.getElementById('toggleReveal');
+  const beginDelete = document.getElementById('beginDelete');
+  const stepOne = document.getElementById('stepOne');
+  const stepTwo = document.getElementById('stepTwo');
+  const confirmEmail = document.getElementById('confirmEmail');
+  const cancelDelete = document.getElementById('cancelDelete');
+  const confirmDelete = document.getElementById('confirmDelete');
+  const statusEl = document.getElementById('status');
+  const formView = document.getElementById('formView');
+  const doneView = document.getElementById('doneView');
+
+  toggleReveal.addEventListener('click', () => {
+    const showing = passwordInput.type === 'text';
+    passwordInput.type = showing ? 'password' : 'text';
+    toggleReveal.textContent = showing ? 'Show' : 'Hide';
+  });
+
+  function showStatus(kind, message) {
+    statusEl.className = 'status show ' + kind;
+    statusEl.textContent = message;
+  }
+  function clearStatus() {
+    statusEl.className = 'status';
+    statusEl.textContent = '';
+  }
+
+  beginDelete.addEventListener('click', () => {
+    clearStatus();
+    if (!emailInput.reportValidity() || !passwordInput.reportValidity()) return;
+    confirmEmail.textContent = emailInput.value.trim();
+    stepOne.style.display = 'none';
+    stepTwo.style.display = 'flex';
+  });
+
+  cancelDelete.addEventListener('click', () => {
+    stepTwo.style.display = 'none';
+    stepOne.style.display = 'flex';
+    clearStatus();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearStatus();
+    confirmDelete.disabled = true;
+    cancelDelete.disabled = true;
+    confirmDelete.innerHTML = '<span class="spinner"></span>Deleting…';
+
+    try {
+      const tokenRes = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email: emailInput.value.trim(), password: passwordInput.value }),
+      });
+      const tokenJson = await tokenRes.json().catch(() => ({}));
+      if (!tokenRes.ok) {
+        throw new Error(tokenJson.error_description || tokenJson.msg || 'Wrong email or password.');
+      }
+
+      const deleteRes = await fetch(SUPABASE_URL + '/functions/v1/delete-account', {
+        method: 'POST',
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: 'Bearer ' + tokenJson.access_token,
+        },
+      });
+      const deleteJson = await deleteRes.json().catch(() => ({}));
+      if (!deleteRes.ok) {
+        throw new Error(deleteJson.error || 'Could not delete the account. Try again.');
+      }
+
+      formView.style.display = 'none';
+      doneView.classList.add('show');
+    } catch (err) {
+      showStatus('error', err.message || 'Something went wrong. Try again.');
+      stepTwo.style.display = 'none';
+      stepOne.style.display = 'flex';
+    } finally {
+      confirmDelete.disabled = false;
+      cancelDelete.disabled = false;
+      confirmDelete.textContent = 'Yes, permanently delete';
+    }
+  });
+</script>
+</body>
+</html>
