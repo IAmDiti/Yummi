@@ -1,0 +1,11 @@
+-- Remove the fictional bot-seeded posts (stock photos, fabricated ratings)
+-- added by 20260901150100_seed_bot_posts.sql. They served their purpose --
+-- making Discover look populated before any real user had posted -- but the
+-- app is going out to real users now and shouldn't show fake content as if
+-- it were real. `is_seed = true` (and its null user_id) uniquely identifies
+-- these rows, so this can never touch a real post.
+--
+-- Cascades to any post_ratings on these rows (post_ratings.post_id has
+-- "on delete cascade"), which is correct: a rating on a post that no longer
+-- exists shouldn't exist either.
+delete from public.posts where is_seed = true;
