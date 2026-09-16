@@ -11,11 +11,16 @@ type Props = {
   style?: ViewStyle;
   /** remove default horizontal padding (full-bleed camera etc.) */
   bleed?: boolean;
+  /** override the safe-area background (e.g. black for a full-bleed photo feed) */
+  backgroundColor?: string;
 };
 
-export function Screen({ children, center, style, bleed }: Props) {
+export function Screen({ children, center, style, bleed, backgroundColor }: Props) {
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'bottom', 'left', 'right']}>
+    <SafeAreaView
+      style={[styles.safe, backgroundColor ? { backgroundColor } : null]}
+      edges={['top', 'bottom', 'left', 'right']}
+    >
       <View
         style={[
           styles.body,

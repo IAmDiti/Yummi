@@ -9,12 +9,16 @@ type Props = {
   /** presence makes the stars tappable; omit for read-only display */
   onRate?: (n: number) => void;
   size?: number;
+  /** use when the stars sit on a photo/dark scrim instead of the app's normal light surfaces */
+  onDark?: boolean;
 };
 
 const STARS = [1, 2, 3, 4, 5];
 
-export function RatingStars({ value, count, onRate, size = 22 }: Props) {
+export function RatingStars({ value, count, onRate, size = 22, onDark }: Props) {
   const filled = Math.round(value ?? 0);
+  const emptyColor = onDark ? 'rgba(255,255,255,0.35)' : colors.border;
+  const labelColor = onDark ? 'rgba(255,255,255,0.85)' : colors.textMuted;
 
   return (
     <View style={styles.row}>
@@ -27,21 +31,21 @@ export function RatingStars({ value, count, onRate, size = 22 }: Props) {
             accessibilityRole="button"
             accessibilityLabel={`Rate ${n} out of 5 stars`}
           >
-            <Text style={[styles.star, { fontSize: size, color: n <= filled ? colors.accent : colors.border }]}>
+            <Text style={[styles.star, { fontSize: size, color: n <= filled ? colors.accent : emptyColor }]}>
               ★
             </Text>
           </Pressable>
         ) : (
           <Text
             key={n}
-            style={[styles.star, { fontSize: size, color: n <= filled ? colors.accent : colors.border }]}
+            style={[styles.star, { fontSize: size, color: n <= filled ? colors.accent : emptyColor }]}
           >
             ★
           </Text>
         ),
       )}
       {value !== null && (
-        <Text style={styles.label}>
+        <Text style={[styles.label, { color: labelColor }]}>
           {value.toFixed(1)}
           {typeof count === 'number' ? ` (${count})` : ''}
         </Text>
@@ -53,5 +57,5 @@ export function RatingStars({ value, count, onRate, size = 22 }: Props) {
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center' },
   star: { marginRight: 1 },
-  label: { marginLeft: spacing.xs, fontSize: font.small, color: colors.textMuted, fontWeight: '600' },
+  label: { marginLeft: spacing.xs, fontSize: font.small, fontWeight: '600' },
 });

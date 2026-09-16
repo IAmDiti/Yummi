@@ -13,6 +13,7 @@ export const initialMockProfile: Profile = {
   displayName: 'Demo Cook',
   avatarUrl: null,
   dietaryTags: [],
+  hideUsername: false,
 };
 
 export function mockDelay<T>(value: T, ms = 400): Promise<T> {

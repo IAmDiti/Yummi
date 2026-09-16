@@ -41,7 +41,11 @@ type AuthState = {
    */
   signUp: (email: string, password: string) => Promise<{ needsConfirmation: boolean }>;
   signOut: () => Promise<void>;
-  updateProfile: (patch: { displayName?: string; dietaryTags?: DietaryTag[] }) => Promise<void>;
+  updateProfile: (patch: {
+    displayName?: string;
+    dietaryTags?: DietaryTag[];
+    hideUsername?: boolean;
+  }) => Promise<void>;
   /**
    * Permanently deletes the signed-in user's account: the sign-in itself,
    * their profile, dish posts, photos, and ratings — required by Google
@@ -71,6 +75,7 @@ export const useAuth = create<AuthState>()(
               displayName: data.display_name,
               avatarUrl: data.avatar_url,
               dietaryTags: (data.dietary_tags ?? []) as DietaryTag[],
+              hideUsername: !!data.hide_username,
             },
           });
         }
@@ -130,6 +135,7 @@ export const useAuth = create<AuthState>()(
             ...current,
             displayName: patch.displayName ?? current.displayName,
             dietaryTags: patch.dietaryTags ?? current.dietaryTags,
+            hideUsername: patch.hideUsername ?? current.hideUsername,
           };
           set({ profile: next });
 
@@ -139,7 +145,11 @@ export const useAuth = create<AuthState>()(
           }
           const { error } = await supabase!
             .from('profiles')
-            .update({ display_name: next.displayName, dietary_tags: next.dietaryTags })
+            .update({
+              display_name: next.displayName,
+              dietary_tags: next.dietaryTags,
+              hide_username: next.hideUsername,
+            })
             .eq('id', current.id);
           if (error) throw error;
         },

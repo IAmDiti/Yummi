@@ -1,8 +1,8 @@
 /**
- * Posts (dish photos + location) — plain CRUD against Postgres via PostgREST,
- * gated by RLS (see supabase/migrations/*_posts_and_ratings.sql). No edge
- * function involved. Mirrors the mock-mode pattern used throughout
- * src/services/ai/* so /discover and /map work without a backend.
+ * Posts (dish photos) — plain CRUD against Postgres via PostgREST, gated by
+ * RLS (see supabase/migrations/*_posts_and_ratings.sql). No edge function
+ * involved. Mirrors the mock-mode pattern used throughout src/services/ai/*
+ * so /discover works without a backend.
  */
 
 import { IS_MOCK } from '../env';
@@ -21,8 +21,6 @@ function mapRow(row: Record<string, any>): Post {
     difficulty: row.difficulty,
     photoUrl: row.photo_url,
     caption: row.caption,
-    latitude: Number(row.latitude),
-    longitude: Number(row.longitude),
     createdAt: row.created_at,
     ratingCount: Number(row.effective_count ?? 0),
     avgRating:
@@ -48,24 +46,6 @@ export async function getTrendingPosts(limit = 20): Promise<Post[]> {
   return (data ?? []).map(mapRow);
 }
 
-export async function getRecentPosts(limit = 100): Promise<Post[]> {
-  if (IS_MOCK) {
-    return mockDelay(
-      [...mockPosts]
-        .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1))
-        .slice(0, limit),
-      500,
-    );
-  }
-  const { data, error } = await supabase!
-    .from('post_trending')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(limit);
-  if (error) throw error;
-  return (data ?? []).map(mapRow);
-}
-
 export type CreatePostInput = {
   userId: string;
   authorName: string;
@@ -73,8 +53,6 @@ export type CreatePostInput = {
   recipeName?: string | null;
   difficulty?: Difficulty | null;
   caption?: string | null;
-  latitude: number;
-  longitude: number;
   /** local file URI from the camera capture */
   photoUri: string;
 };
@@ -91,8 +69,6 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       difficulty: input.difficulty ?? null,
       photoUrl: input.photoUri,
       caption: input.caption ?? null,
-      latitude: input.latitude,
-      longitude: input.longitude,
       createdAt: new Date().toISOString(),
       ratingCount: 0,
       avgRating: null,
@@ -121,8 +97,6 @@ export async function createPost(input: CreatePostInput): Promise<Post> {
       difficulty: input.difficulty ?? null,
       photo_url: urlData.publicUrl,
       caption: input.caption ?? null,
-      latitude: input.latitude,
-      longitude: input.longitude,
     })
     .select('*')
     .single();

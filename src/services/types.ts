@@ -33,6 +33,8 @@ export type Profile = {
   displayName: string | null;
   avatarUrl: string | null;
   dietaryTags: DietaryTag[];
+  /** When true, posts and ratings show "***" instead of displayName. */
+  hideUsername: boolean;
 };
 
 export type Recommendation = {
@@ -54,35 +56,22 @@ export type Recommendation = {
   steps: string[];
 };
 
-/** A photo someone posted of a dish they cooked or ordered, with where they made it. */
+/** A photo someone posted of a dish they cooked or ordered. */
 export type Post = {
   id: string;
   /** null for bot-seeded posts */
   userId: string | null;
   isSeed: boolean;
+  /** "***" when the poster chose to hide their username (see Profile.hideUsername) */
   authorName: string;
   authorAvatarUrl: string | null;
   recipeName: string | null;
   difficulty: Difficulty | null;
   photoUrl: string;
   caption: string | null;
-  latitude: number;
-  longitude: number;
   createdAt: string;
   ratingCount: number;
   avgRating: number | null;
-};
-
-/**
- * Map viewport. Mirrors react-native-maps' `Region` shape, redeclared here so
- * code that only needs the type never has to import the native-only module
- * (which fails to bundle for web).
- */
-export type MapRegion = {
-  latitude: number;
-  longitude: number;
-  latitudeDelta: number;
-  longitudeDelta: number;
 };
 
 export type ChatTurn = {

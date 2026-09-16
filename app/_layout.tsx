@@ -36,8 +36,7 @@ export default function RootLayout() {
           <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
           <Stack.Screen name="profile" options={{ title: 'Your profile' }} />
           <Stack.Screen name="post-meal" options={{ title: 'Share your dish' }} />
-          <Stack.Screen name="map" options={{ title: 'What people are cooking' }} />
-          <Stack.Screen name="discover" options={{ title: 'Mostly cooked' }} />
+          <Stack.Screen name="discover" options={{ headerShown: false }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>

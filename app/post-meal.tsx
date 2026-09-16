@@ -1,6 +1,5 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -26,13 +25,12 @@ import { useAuth } from '../src/store/auth';
 import { useSession } from '../src/store/session';
 import { colors, font, radius, spacing } from '../src/theme';
 
-type Phase = 'camera' | 'preview' | 'locating' | 'compose' | 'posting' | 'error';
+type Phase = 'camera' | 'preview' | 'compose' | 'posting' | 'error';
 
 export default function PostMeal() {
   const router = useRouter();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
-  const [locationPermission, requestLocationPermission] = Location.useForegroundPermissions();
 
   const cooking = useSession((s) => s.cooking);
   const endCooking = useSession((s) => s.endCooking);
@@ -42,7 +40,6 @@ export default function PostMeal() {
 
   const [phase, setPhase] = useState<Phase>('camera');
   const [photoUri, setPhotoUri] = useState<string | null>(null);
-  const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [caption, setCaption] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [retryLabel, setRetryLabel] = useState('Try again');
@@ -59,47 +56,6 @@ export default function PostMeal() {
     setRetryLabel(label);
     setPhase('error');
   };
-
-  // Acquire location once the user has confirmed a photo.
-  useEffect(() => {
-    if (phase !== 'locating') return;
-    let cancelled = false;
-    (async () => {
-      try {
-        let perm = locationPermission;
-        if (!perm?.granted) perm = await requestLocationPermission();
-        if (cancelled) return;
-        if (!perm.granted) {
-          if (perm.canAskAgain) {
-            fail(
-              'Yummi needs your location to post where you cooked.',
-              () => setPhase('locating'),
-              'Allow location',
-            );
-          } else {
-            fail(
-              'Location access is off. Turn it on for Yummi in your phone settings.',
-              () => Linking.openSettings(),
-              'Open settings',
-            );
-          }
-          return;
-        }
-        const loc = await Location.getCurrentPositionAsync({});
-        if (cancelled) return;
-        setCoords({ latitude: loc.coords.latitude, longitude: loc.coords.longitude });
-        setPhase('compose');
-      } catch {
-        if (!cancelled) {
-          fail("Couldn't get your location. Try again, or skip posting.", () => setPhase('locating'));
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase]);
 
   // Guard: nothing to post -> go home. (Mirrors app/cook.tsx's own guard.)
   useEffect(() => {
@@ -120,7 +76,7 @@ export default function PostMeal() {
       <Screen>
         <ErrorState
           title="Sign in to share your dish"
-          message="Create a free account to post your photo and see it on the map."
+          message="Create a free account to post your photo to Discover."
           actions={[
             { label: 'Sign in', onPress: () => router.push('/login') },
             { label: 'Skip, don’t post publicly', onPress: goHomeWithoutPosting, variant: 'secondary' },
@@ -148,22 +104,22 @@ export default function PostMeal() {
   };
 
   const submitPost = async () => {
-    if (!photoUri || !coords || !userId) return;
+    if (!photoUri || !userId) return;
     setPhase('posting');
     try {
       await createPost({
         userId,
-        authorName: profile?.displayName?.trim() || 'A Yummi cook',
+        authorName: profile?.hideUsername
+          ? '***'
+          : profile?.displayName?.trim() || 'A Yummi cook',
         authorAvatarUrl: profile?.avatarUrl ?? null,
         recipeName: cooking.recommendation.name,
         difficulty: cooking.recommendation.difficulty,
         caption: caption.trim() || null,
-        latitude: coords.latitude,
-        longitude: coords.longitude,
         photoUri,
       });
       endCooking();
-      router.replace('/map');
+      router.replace('/discover');
     } catch (err) {
       fail(err instanceof Error ? err.message : 'Could not post your photo. Try again.', submitPost);
     }
@@ -228,17 +184,9 @@ export default function PostMeal() {
           <Image source={{ uri: photoUri }} style={styles.preview} resizeMode="cover" />
         </View>
         <View style={styles.previewActions}>
-          <Button label="Use this photo" onPress={() => setPhase('locating')} />
+          <Button label="Use this photo" onPress={() => setPhase('compose')} />
           <Button label="Retake" variant="secondary" onPress={() => setPhase('camera')} />
         </View>
-      </Screen>
-    );
-  }
-
-  if (phase === 'locating') {
-    return (
-      <Screen>
-        <LoadingState message="Finding your location…" />
       </Screen>
     );
   }

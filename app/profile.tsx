@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Linking, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
 import { Button } from '../src/components/Button';
 import { Body, Heading } from '../src/components/Heading';
@@ -22,6 +22,7 @@ export default function ProfileScreen() {
 
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '');
   const [tags, setTags] = useState<DietaryTag[]>(profile?.dietaryTags ?? []);
+  const [hideUsername, setHideUsername] = useState(profile?.hideUsername ?? false);
   const [saving, setSaving] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -30,6 +31,7 @@ export default function ProfileScreen() {
   useEffect(() => {
     setDisplayName(profile?.displayName ?? '');
     setTags(profile?.dietaryTags ?? []);
+    setHideUsername(profile?.hideUsername ?? false);
   }, [profile]);
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function ProfileScreen() {
   const save = async () => {
     setSaving(true);
     try {
-      await updateProfile({ displayName: displayName.trim(), dietaryTags: tags });
+      await updateProfile({ displayName: displayName.trim(), dietaryTags: tags, hideUsername });
       router.back();
     } finally {
       setSaving(false);
@@ -123,6 +125,26 @@ export default function ProfileScreen() {
                 </Pressable>
               );
             })}
+          </View>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.privacyRow}>
+            <View style={styles.privacyText}>
+              <Text style={styles.cardLabel}>Post anonymously</Text>
+              <Body muted style={styles.hint}>
+                {hideUsername
+                  ? 'Your posts and ratings show as "***" instead of your name.'
+                  : 'Your name shows on the dishes you post and rate.'}
+              </Body>
+            </View>
+            <Switch
+              value={hideUsername}
+              onValueChange={setHideUsername}
+              trackColor={{ false: colors.surfaceAlt, true: colors.accent }}
+              thumbColor={colors.bg}
+              accessibilityLabel="Hide my username on posts"
+            />
           </View>
         </View>
 
@@ -228,6 +250,8 @@ const styles = StyleSheet.create({
   chipSelected: { backgroundColor: colors.accent },
   chipText: { fontSize: font.small, color: colors.text },
   chipTextSelected: { color: colors.onAccent, fontWeight: '700' },
+  privacyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  privacyText: { flex: 1, gap: spacing.xs },
   dangerCard: { borderColor: colors.danger },
   dangerText: { color: colors.text },
   error: { color: colors.danger, fontSize: font.small },

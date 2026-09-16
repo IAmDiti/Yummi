@@ -29,7 +29,9 @@ sign you in and to attach the content described below to you.
 Your **display name** and **dietary preferences** (e.g. vegetarian, gluten
 free) are stored against your account. Dietary preferences are used to filter
 meal recommendations and are not shown to other users. Your display name is
-shown publicly alongside anything you post or rate.
+shown publicly alongside anything you post or rate — unless you turn on
+**Post anonymously** in your profile, in which case "***" is shown instead of
+your name on anything you post or rate from then on.
 
 ### 3. Photos of your fridge (scanning)
 
@@ -44,26 +46,19 @@ provider (Anthropic) to identify the food in the image.
 
 If you choose to share a photo of something you cooked, that photo **is
 uploaded and stored** on our backend (Supabase Storage) and is **publicly
-visible** to everyone using the app, alongside your display name, the recipe
-name, your caption, and the location described below. This is different from
-a fridge-scan photo — you choose when to post, and posted photos persist
-until you delete the post or your account.
+visible** to everyone using the app in the Discover feed, alongside your
+display name (or "***" — see above), the recipe name, and your caption. This
+is different from a fridge-scan photo — you choose when to post, and posted
+photos persist until you delete the post or your account. Yummi does not
+collect or store your location.
 
-### 5. Location
-
-When you post a dish photo, the app asks for your device location and stores
-those coordinates with the post so it can appear on the map of "what people
-are cooking nearby." This location is public, the same as the photo. If you
-just open the map to look around, the app may also use your location
-on-device to center the view — that use isn't sent anywhere or stored.
-
-### 6. Ratings
+### 5. Ratings
 
 Star ratings (1–5) you give to other people's posts are stored on our backend
 and linked to your account. The app only ever shows other users the
 **aggregated average** rating for a post, not who rated it.
 
-### 7. Your ingredient list
+### 6. Your ingredient list
 
 The list of ingredients you confirm or type is stored **only on your device**
 (local app storage) — it isn't uploaded for safekeeping. The ingredient
@@ -71,7 +66,7 @@ The list of ingredients you confirm or type is stored **only on your device**
 for a meal recommendation or cooking help, so the app can generate a
 suggestion and step-by-step guidance.
 
-### 8. Voice input
+### 7. Voice input
 
 If you use the microphone to add ingredients or ask a cooking question,
 speech recognition is performed by **your device's own operating-system
@@ -80,7 +75,7 @@ resulting text; for cooking questions that text is sent to our backend and AI
 provider to generate an answer. Yummi does **not** record, upload, or store
 audio.
 
-### 9. Network address (abuse prevention only)
+### 8. Network address (abuse prevention only)
 
 When your device contacts our backend, your IP address is briefly recorded
 solely to limit automated abuse of the service (rate limiting). These records
@@ -138,9 +133,11 @@ data from children.
 ## Your choices
 
 - You can use the app's core scan → recommend → cook flow without ever
-  creating an account, and without granting camera/microphone/location access
-  (add ingredients manually instead).
-- Creating an account, posting a dish, and rating posts are all optional.
+  creating an account, and without granting camera or microphone access (add
+  ingredients manually instead).
+- Creating an account, posting a dish, and rating posts are all optional, and
+  you can post and rate under "***" instead of your name (Profile → Post
+  anonymously).
 - Uninstalling the app removes everything it stored locally on your device,
   but does **not** delete your account or anything already posted — use the
   in-app or web deletion option above for that.
