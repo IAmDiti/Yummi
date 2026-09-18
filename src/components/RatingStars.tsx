@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { t } from '../i18n';
 import { colors, font, spacing } from '../theme';
 
 type Props = {
@@ -29,7 +30,7 @@ export function RatingStars({ value, count, onRate, size = 22, onDark }: Props) 
             onPress={() => onRate(n)}
             hitSlop={6}
             accessibilityRole="button"
-            accessibilityLabel={`Rate ${n} out of 5 stars`}
+            accessibilityLabel={t('discover.rateAria', { n })}
           >
             <Text style={[styles.star, { fontSize: size, color: n <= filled ? colors.accent : emptyColor }]}>
               ★

@@ -4,8 +4,10 @@ import { Linking, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, Vi
 
 import { Button } from '../src/components/Button';
 import { Body, Heading } from '../src/components/Heading';
+import { LanguageRow } from '../src/components/LanguagePicker';
 import { Screen } from '../src/components/Screen';
-import { DIETARY_TAGS, DIETARY_TAG_LABEL } from '../src/services/dietary';
+import { useT } from '../src/i18n';
+import { DIETARY_TAGS } from '../src/services/dietary';
 import { PRIVACY_POLICY_URL } from '../src/services/legal';
 import type { DietaryTag } from '../src/services/types';
 import { useAuth } from '../src/store/auth';
@@ -13,6 +15,7 @@ import { colors, font, radius, spacing } from '../src/theme';
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const t = useT();
   const status = useAuth((s) => s.status);
   const profile = useAuth((s) => s.profile);
   const email = useAuth((s) => s.email);
@@ -44,7 +47,7 @@ export default function ProfileScreen() {
   }, [displayName, profile?.displayName, email]);
 
   const toggleTag = (tag: DietaryTag) => {
-    setTags((cur) => (cur.includes(tag) ? cur.filter((t) => t !== tag) : [...cur, tag]));
+    setTags((cur) => (cur.includes(tag) ? cur.filter((x) => x !== tag) : [...cur, tag]));
   };
 
   const save = async () => {
@@ -69,7 +72,7 @@ export default function ProfileScreen() {
       await deleteAccount();
       router.replace('/');
     } catch (err) {
-      setDeleteError(err instanceof Error ? err.message : 'Could not delete your account. Try again.');
+      setDeleteError(err instanceof Error ? err.message : t('profile.deleteFailed'));
       setDeleting(false);
     }
   };
@@ -84,44 +87,43 @@ export default function ProfileScreen() {
             <Text style={styles.avatarText}>{initial}</Text>
           </View>
           <Heading level="heading" style={styles.name}>
-            {displayName.trim() || profile.displayName || 'Add your name'}
+            {displayName.trim() || profile.displayName || t('profile.addYourName')}
           </Heading>
           {!!email && <Body muted style={styles.email}>{email}</Body>}
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>Display name</Text>
+          <Text style={styles.cardLabel}>{t('profile.displayName')}</Text>
           <TextInput
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="What should we call you?"
+            placeholder={t('profile.displayNamePlaceholder')}
             placeholderTextColor={colors.textMuted}
             style={styles.input}
             returnKeyType="done"
-            accessibilityLabel="Display name"
+            accessibilityLabel={t('profile.displayName')}
           />
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>Dietary preferences</Text>
+          <Text style={styles.cardLabel}>{t('profile.dietaryPreferences')}</Text>
           <Body muted style={styles.hint}>
-            We’ll only recommend meals that fit these.
+            {t('profile.dietaryHint')}
           </Body>
           <View style={styles.chips}>
             {DIETARY_TAGS.map((tag) => {
               const selected = tags.includes(tag);
+              const label = t(`dietary.${tag}`);
               return (
                 <Pressable
                   key={tag}
                   onPress={() => toggleTag(tag)}
                   accessibilityRole="button"
                   accessibilityState={{ selected }}
-                  accessibilityLabel={DIETARY_TAG_LABEL[tag]}
+                  accessibilityLabel={label}
                   style={[styles.chip, selected && styles.chipSelected]}
                 >
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
-                    {DIETARY_TAG_LABEL[tag]}
-                  </Text>
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
                 </Pressable>
               );
             })}
@@ -129,13 +131,15 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.card}>
+          <LanguageRow />
+        </View>
+
+        <View style={styles.card}>
           <View style={styles.privacyRow}>
             <View style={styles.privacyText}>
-              <Text style={styles.cardLabel}>Post anonymously</Text>
+              <Text style={styles.cardLabel}>{t('profile.postAnonymously')}</Text>
               <Body muted style={styles.hint}>
-                {hideUsername
-                  ? 'Your posts and ratings show as "***" instead of your name.'
-                  : 'Your name shows on the dishes you post and rate.'}
+                {hideUsername ? t('profile.hideUsernameOn') : t('profile.hideUsernameOff')}
               </Body>
             </View>
             <Switch
@@ -143,28 +147,25 @@ export default function ProfileScreen() {
               onValueChange={setHideUsername}
               trackColor={{ false: colors.surfaceAlt, true: colors.accent }}
               thumbColor={colors.bg}
-              accessibilityLabel="Hide my username on posts"
+              accessibilityLabel={t('profile.hideUsernameAria')}
             />
           </View>
         </View>
 
         <View style={[styles.card, styles.dangerCard]}>
-          <Text style={styles.cardLabel}>Delete account</Text>
+          <Text style={styles.cardLabel}>{t('profile.deleteAccount')}</Text>
           {confirmingDelete ? (
             <>
-              <Body style={styles.dangerText}>
-                This permanently deletes your account, profile, dish posts, photos, and ratings.
-                There’s no undo.
-              </Body>
+              <Body style={styles.dangerText}>{t('profile.deleteWarning')}</Body>
               {!!deleteError && <Text style={styles.error}>{deleteError}</Text>}
               <Button
-                label="Yes, delete my account"
+                label={t('profile.yesDelete')}
                 variant="danger"
                 onPress={doDeleteAccount}
                 loading={deleting}
               />
               <Button
-                label="Cancel"
+                label={t('common.cancel')}
                 variant="secondary"
                 onPress={() => {
                   setConfirmingDelete(false);
@@ -176,10 +177,10 @@ export default function ProfileScreen() {
           ) : (
             <>
               <Body muted style={styles.hint}>
-                Permanently deletes your account and everything tied to it. This can’t be undone.
+                {t('profile.deleteHint')}
               </Body>
               <Button
-                label="Delete my account"
+                label={t('profile.deleteMyAccount')}
                 variant="danger"
                 onPress={() => setConfirmingDelete(true)}
               />
@@ -193,13 +194,13 @@ export default function ProfileScreen() {
           accessibilityRole="link"
           style={styles.privacyLink}
         >
-          <Text style={styles.privacyLinkText}>Privacy Policy</Text>
+          <Text style={styles.privacyLinkText}>{t('profile.privacyPolicy')}</Text>
         </Pressable>
       </ScrollView>
 
       <View style={styles.actions}>
-        <Button label="Save" onPress={save} loading={saving} />
-        <Button label="Sign out" variant="danger" onPress={doSignOut} />
+        <Button label={t('profile.save')} onPress={save} loading={saving} />
+        <Button label={t('profile.signOut')} variant="danger" onPress={doSignOut} />
       </View>
     </Screen>
   );

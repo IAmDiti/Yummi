@@ -27,6 +27,7 @@ import { Body } from '../src/components/Heading';
 import { LoadingState } from '../src/components/LoadingState';
 import { RecommendationCard } from '../src/components/RecommendationCard';
 import { Screen } from '../src/components/Screen';
+import { useT } from '../src/i18n';
 import { getRecommendationBatch } from '../src/services/ai/recommendations';
 import { AiError } from '../src/services/types';
 import type { Difficulty, Recommendation } from '../src/services/types';
@@ -39,16 +40,17 @@ import { colors, font, radius, spacing } from '../src/theme';
 // Object.is check and causes an infinite render loop.
 const EMPTY_DIETARY_TAGS: never[] = [];
 
-const DIFFICULTY_FILTERS: { label: string; value: Difficulty | null }[] = [
-  { label: 'All', value: null },
-  { label: 'Easy', value: 'easy' },
-  { label: 'Medium', value: 'medium' },
-  { label: 'Hard', value: 'hard' },
-  { label: 'Extra hard', value: 'extra_hard' },
+const DIFFICULTY_FILTERS: { key: 'all' | Difficulty; value: Difficulty | null }[] = [
+  { key: 'all', value: null },
+  { key: 'easy', value: 'easy' },
+  { key: 'medium', value: 'medium' },
+  { key: 'hard', value: 'hard' },
+  { key: 'extra_hard', value: 'extra_hard' },
 ];
 
 export default function Recommend() {
   const router = useRouter();
+  const t = useT();
   // Read live, not captured once at module load — a fixed value goes stale
   // the moment the window resizes (rotation, a tablet/foldable split-screen
   // change, or a Z Fold-style fold/unfold), throwing the swipe math off.
@@ -111,7 +113,7 @@ export default function Recommend() {
       } catch (err) {
         if (blocking) {
           setErrorMsg(
-            err instanceof AiError ? err.message : 'Could not get suggestions. Try again.',
+            err instanceof AiError ? err.message : t('recommend.couldNotGetSuggestions'),
           );
         }
       } finally {
@@ -171,8 +173,8 @@ export default function Recommend() {
         <LoadingState
           message={
             useSession.getState().rejected.length
-              ? 'Finding a few more ideas…'
-              : 'Thinking about what you’d like…'
+              ? t('recommend.findingMore')
+              : t('recommend.thinking')
           }
         />
       </Screen>
@@ -185,8 +187,8 @@ export default function Recommend() {
         <ErrorState
           message={errorMsg}
           actions={[
-            { label: 'Try again', onPress: () => fetchBatch(difficultyFilter, true) },
-            { label: 'Edit ingredients', onPress: () => router.back(), variant: 'secondary' },
+            { label: t('common.tryAgain'), onPress: () => fetchBatch(difficultyFilter, true) },
+            { label: t('recommend.editIngredients'), onPress: () => router.back(), variant: 'secondary' },
           ]}
         />
       </Screen>
@@ -203,17 +205,18 @@ export default function Recommend() {
       >
         {DIFFICULTY_FILTERS.map((f) => {
           const selected = f.value === difficultyFilter;
+          const label = t(`difficulty.${f.key}`);
           return (
             <Pressable
-              key={f.label}
+              key={f.key}
               onPress={() => selectDifficulty(f.value)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              accessibilityLabel={`Filter by ${f.label} difficulty`}
+              accessibilityLabel={t('recommend.filterAria', { label })}
               style={[styles.filterChip, selected && styles.filterChipSelected]}
             >
               <Text style={[styles.filterChipText, selected && styles.filterChipTextSelected]}>
-                {f.label}
+                {label}
               </Text>
             </Pressable>
           );
@@ -223,10 +226,10 @@ export default function Recommend() {
       {visible.length === 0 ? (
         <View style={styles.empty}>
           <Body muted style={styles.emptyText}>
-            No more ideas at this difficulty right now.
+            {t('recommend.noMoreIdeas')}
           </Body>
           <Button
-            label="Try another difficulty"
+            label={t('recommend.tryAnotherDifficulty')}
             variant="secondary"
             onPress={() => selectDifficulty(null)}
           />
@@ -269,8 +272,8 @@ export default function Recommend() {
           onPress={() => topCardRef.current?.triggerSwipe('left')}
           disabled={visible.length === 0}
           accessibilityRole="button"
-          accessibilityLabel="Not for me"
-          accessibilityHint="Skips this suggestion"
+          accessibilityLabel={t('recommend.notForMe')}
+          accessibilityHint={t('recommend.notForMeHint')}
           style={[styles.roundBtn, styles.rejectBtn, visible.length === 0 && styles.roundBtnOff]}
         >
           <Text style={styles.rejectIcon}>✕</Text>
@@ -279,8 +282,8 @@ export default function Recommend() {
           onPress={() => topCardRef.current?.triggerSwipe('right')}
           disabled={visible.length === 0}
           accessibilityRole="button"
-          accessibilityLabel="Let’s cook this"
-          accessibilityHint="Starts cooking this recipe"
+          accessibilityLabel={t('recommend.letsCook')}
+          accessibilityHint={t('recommend.letsCookHint')}
           style={[styles.roundBtn, styles.acceptBtn, visible.length === 0 && styles.roundBtnOff]}
         >
           <Text style={styles.acceptIcon}>♥</Text>
@@ -319,6 +322,7 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
   },
   ref,
 ) {
+  const t = useT();
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
@@ -399,10 +403,10 @@ const SwipeCard = forwardRef<SwipeCardHandle, SwipeCardProps>(function SwipeCard
       <Animated.View style={[styles.cardWrap, cardStyle]}>
         <RecommendationCard recommendation={recommendation} height={cardHeight} />
         <Animated.View pointerEvents="none" style={[styles.stamp, styles.likeStamp, likeStyle]}>
-          <Text style={styles.likeStampText}>YES</Text>
+          <Text style={styles.likeStampText}>{t('recommend.stampYes')}</Text>
         </Animated.View>
         <Animated.View pointerEvents="none" style={[styles.stamp, styles.nopeStamp, nopeStyle]}>
-          <Text style={styles.nopeStampText}>SKIP</Text>
+          <Text style={styles.nopeStampText}>{t('recommend.stampNo')}</Text>
         </Animated.View>
       </Animated.View>
     </GestureDetector>

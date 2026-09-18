@@ -16,6 +16,8 @@ import { Body } from '../src/components/Heading';
 import { IngredientRow } from '../src/components/IngredientRow';
 import { MicButton } from '../src/components/MicButton';
 import { Screen } from '../src/components/Screen';
+import { useAndroidKeyboardHeight } from '../src/hooks/useAndroidKeyboardHeight';
+import { useT } from '../src/i18n';
 import {
   isAdvanceCommand,
   speechRecognitionAvailable,
@@ -27,6 +29,8 @@ import { colors, font, radius, spacing } from '../src/theme';
 
 export default function Ingredients() {
   const router = useRouter();
+  const t = useT();
+  const androidKbHeight = useAndroidKeyboardHeight();
   const ingredients = useSession((s) => s.ingredients);
   const addIngredient = useSession((s) => s.addIngredient);
   const addIngredients = useSession((s) => s.addIngredients);
@@ -58,16 +62,16 @@ export default function Ingredients() {
       return;
     }
     heardRef.current = '';
-    setMicCaption('Listening… say what else you have');
+    setMicCaption(t('ingredients.listeningPrompt'));
     const ok = await startListening({
       onTranscript: (text, isFinal) => {
         heardRef.current = text;
-        setMicCaption(text || 'Listening…');
+        setMicCaption(text || t('mic.listening'));
         if (isFinal && text.trim() && !isAdvanceCommand(text)) {
           const parts = parseSpokenIngredients(text);
           if (parts.length) {
             addIngredients(parts);
-            setMicCaption(`Added: ${parts.join(', ')}`);
+            setMicCaption(t('ingredients.added', { list: parts.join(', ') }));
           }
         }
       },
@@ -78,7 +82,7 @@ export default function Ingredients() {
       onEnd: () => setListening(false),
     });
     setListening(ok);
-  }, [listening, addIngredients]);
+  }, [listening, addIngredients, t]);
 
   const findFood = () => {
     resetRecommendations();
@@ -88,13 +92,11 @@ export default function Ingredients() {
   return (
     <Screen>
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, androidKbHeight ? { paddingBottom: androidKbHeight } : null]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <Body muted style={styles.intro}>
-          {ingredients.length
-            ? 'Fix anything that’s wrong, then find something to eat.'
-            : 'Add what you’ve got in the kitchen.'}
+          {ingredients.length ? t('ingredients.introHasItems') : t('ingredients.introEmpty')}
         </Body>
 
         <View style={styles.addBar}>
@@ -102,7 +104,7 @@ export default function Ingredients() {
             value={draft}
             onChangeText={setDraft}
             onSubmitEditing={commitDraft}
-            placeholder="Add an ingredient"
+            placeholder={t('ingredients.placeholder')}
             placeholderTextColor={colors.textMuted}
             style={styles.addInput}
             returnKeyType="done"
@@ -111,7 +113,7 @@ export default function Ingredients() {
           <Pressable
             onPress={commitDraft}
             accessibilityRole="button"
-            accessibilityLabel="Add ingredient"
+            accessibilityLabel={t('ingredients.addAria')}
             style={styles.addButton}
           >
             <Text style={styles.addButtonText}>＋</Text>
@@ -132,8 +134,7 @@ export default function Ingredients() {
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <Body muted style={styles.empty}>
-              Nothing here yet. Type above{speechRecognitionAvailable ? ', use the mic,' : ''} or go
-              back and scan your fridge.
+              {speechRecognitionAvailable ? t('ingredients.emptyWithMic') : t('ingredients.emptyNoMic')}
             </Body>
           }
         />
@@ -144,16 +145,16 @@ export default function Ingredients() {
               listening={listening}
               onPress={toggleMic}
               caption={micCaption}
-              label="Say what else you have"
+              label={t('ingredients.micLabel')}
             />
           </View>
         )}
 
         <Button
-          label="Find something to eat"
+          label={t('ingredients.findFood')}
           onPress={findFood}
           disabled={ingredients.length === 0}
-          accessibilityHint="Asks the assistant to recommend a meal"
+          accessibilityHint={t('ingredients.findFoodHint')}
         />
       </KeyboardAvoidingView>
     </Screen>

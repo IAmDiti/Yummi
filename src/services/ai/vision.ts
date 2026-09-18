@@ -3,6 +3,8 @@
  * See supabase/functions/vision for the actual model call.
  */
 
+import { t } from '../../i18n';
+import { LANGUAGE_ENGLISH_NAME, useLocale } from '../../store/locale';
 import { AiError, type Ingredient } from '../types';
 import { IS_MOCK, invokeFunction } from './client';
 import { mockVision } from './mock';
@@ -27,7 +29,10 @@ export type DetectResult = {
 export async function detectIngredients(imageBase64: string): Promise<DetectResult> {
   const raw: VisionResponse = IS_MOCK
     ? await mockDelay(mockVision)
-    : await invokeFunction<VisionResponse>('vision', { imageBase64 });
+    : await invokeFunction<VisionResponse>('vision', {
+        imageBase64,
+        language: LANGUAGE_ENGLISH_NAME[useLocale.getState().language],
+      });
 
   const ingredients: Ingredient[] = (raw.ingredients ?? []).map((i) => ({
     id: makeId('ing'),
@@ -36,9 +41,7 @@ export async function detectIngredients(imageBase64: string): Promise<DetectResu
   }));
 
   if (ingredients.length === 0) {
-    const warning =
-      raw.warning ??
-      "I couldn't identify enough ingredients. Try taking a photo with the fridge more open and the food visible.";
+    const warning = raw.warning ?? t('scan.notEnoughIngredients');
     return { ingredients: [], warning };
   }
 

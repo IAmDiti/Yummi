@@ -28,7 +28,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false,
-      "versionCode": 11
+      "versionCode": 12
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -60,7 +60,8 @@
           "resizeMode": "contain",
           "backgroundColor": "#FFFFFF"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "router": {},

@@ -8,6 +8,7 @@
 
 import { callClaudeStructured, type ObjectSchema } from '../_shared/anthropic.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
+import { localize } from '../_shared/messages.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
 type Body = {
@@ -20,6 +21,8 @@ type Body = {
   substitutions?: string[];
   history?: { role: 'user' | 'assistant'; content: string }[];
   userMessage?: string;
+  /** English name of the app's display language, e.g. "German" — defaults to English. */
+  language?: string;
 };
 
 type CookReply = { answer: string; revisedSteps?: string[] };
@@ -29,6 +32,8 @@ const SYSTEM = `You are a calm, practical cooking assistant guiding one person t
 You are given the recipe, the current step, the steps already done, known substitutions, and the user's message. Answer their question or solve their problem in the context of where they are right now.
 
 If something they say changes the plan for the REMAINING steps (a missing ingredient, a swap, a mistake to recover from), provide "revisedSteps": a fresh list of the remaining steps from the current point onward. Otherwise omit "revisedSteps".
+
+The user may write to you in any language (English, German, Albanian, Macedonian, Serbian, or others) — understand their question regardless of language. The message will also tell you which language to reply in; write "answer" and every step in "revisedSteps" fluently and naturally in that language, the way a native speaker would actually say it, not a literal translation from English.
 
 Return the result by calling the "respond" tool.`;
 
@@ -57,7 +62,8 @@ Deno.serve(async (req) => {
   }
 
   const userMessage = String(body.userMessage ?? '').trim();
-  if (!userMessage) return json({ error: 'No question provided.' }, 400);
+  const language = String(body.language ?? '').trim() || 'English';
+  if (!userMessage) return json({ error: localize('noQuestion', language) }, 400);
 
   const recipe = body.recipe ?? {};
   const context = [
@@ -80,6 +86,7 @@ Deno.serve(async (req) => {
     context,
     recentHistory ? `\nRecent conversation:\n${recentHistory}` : '',
     `\nUser now says: "${userMessage}"`,
+    `\nReply in ${language}.`,
   ].join('\n');
 
   try {
@@ -90,7 +97,7 @@ Deno.serve(async (req) => {
       content,
     });
 
-    const answer = String(reply.answer ?? '').trim() || "Keep going — you're on track.";
+    const answer = String(reply.answer ?? '').trim() || localize('keepGoing', language);
     const revisedSteps = Array.isArray(reply.revisedSteps)
       ? reply.revisedSteps.map((s) => String(s).trim()).filter(Boolean)
       : undefined;
@@ -98,9 +105,6 @@ Deno.serve(async (req) => {
     return json({ answer, ...(revisedSteps && revisedSteps.length ? { revisedSteps } : {}) });
   } catch (err) {
     console.error('cook error', err);
-    return json(
-      { error: err instanceof Error ? err.message : 'The assistant is having trouble right now.' },
-      502,
-    );
+    return json({ error: err instanceof Error ? err.message : localize('trouble', language) }, 502);
   }
 });

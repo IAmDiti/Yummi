@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
+import { t } from '../i18n';
 import { colors, font, radius } from '../theme';
 
 type Props = {
@@ -10,17 +11,21 @@ type Props = {
 };
 
 export function AvatarButton({ name, email, onPress }: Props) {
-  const source = name?.trim() || email?.trim() || '?';
-  const initial = source[0].toUpperCase();
+  const source = name?.trim() || email?.trim() || '';
+  const initial = source ? source[0].toUpperCase() : null;
   return (
     <Pressable
       onPress={onPress}
       hitSlop={8}
       accessibilityRole="button"
-      accessibilityLabel="Your profile"
+      accessibilityLabel={t('common.yourProfile')}
       style={styles.circle}
     >
-      <Text style={styles.text}>{initial}</Text>
+      {initial ? (
+        <Text style={styles.text}>{initial}</Text>
+      ) : (
+        <Text style={styles.icon}>{'\u{1F464}'}</Text>
+      )}
     </Pressable>
   );
 }
@@ -42,4 +47,5 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   text: { fontSize: font.label, fontWeight: '800', color: colors.onAccent },
+  icon: { fontSize: 20, lineHeight: 22 },
 });

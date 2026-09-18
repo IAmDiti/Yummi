@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { t } from '../i18n';
 import type { Ingredient } from '../services/types';
 import { colors, font, radius, spacing } from '../theme';
 
@@ -41,13 +42,13 @@ export function IngredientRow({ ingredient, onChange, onRemove }: Props) {
             setDraft(ingredient.name);
             setEditing(true);
           }}
-          accessibilityLabel={`Edit ${ingredient.name}`}
-          accessibilityHint="Opens an editable text field"
+          accessibilityLabel={t('ingredientRow.editAria', { name: ingredient.name })}
+          accessibilityHint={t('ingredientRow.editHint')}
         >
           <Text style={styles.name}>{ingredient.name}</Text>
           {ingredient.confidence === 'uncertain' && (
             <View style={styles.badge}>
-              <Text style={styles.badgeText}>not sure</Text>
+              <Text style={styles.badgeText}>{t('ingredientRow.notSure')}</Text>
             </View>
           )}
         </Pressable>
@@ -57,7 +58,7 @@ export function IngredientRow({ ingredient, onChange, onRemove }: Props) {
         onPress={onRemove}
         hitSlop={12}
         accessibilityRole="button"
-        accessibilityLabel={`Remove ${ingredient.name}`}
+        accessibilityLabel={t('ingredientRow.removeAria', { name: ingredient.name })}
         style={styles.remove}
       >
         <Text style={styles.removeIcon}>✕</Text>

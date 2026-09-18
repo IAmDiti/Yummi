@@ -7,6 +7,7 @@
  * the next batch steers away from it.
  */
 
+import { LANGUAGE_ENGLISH_NAME, useLocale } from '../../store/locale';
 import type { Difficulty, Ingredient, Recommendation } from '../types';
 import { IS_MOCK, invokeFunction } from './client';
 import { mockRecommendationBatch } from './mock';
@@ -38,6 +39,7 @@ export async function getRecommendationBatch(
     rejected,
     dietaryTags,
     difficulty,
+    language: LANGUAGE_ENGLISH_NAME[useLocale.getState().language],
   });
 
   return (raw.recommendations ?? []).map(normalise);

@@ -5,10 +5,12 @@ import { useEffect, useState } from 'react';
 import { ErrorState } from '../src/components/ErrorState';
 import { LoadingState } from '../src/components/LoadingState';
 import { Screen } from '../src/components/Screen';
+import { useT } from '../src/i18n';
 import { supabase } from '../src/services/supabase';
 
 export default function AuthCallback() {
   const router = useRouter();
+  const t = useT();
   const url = Linking.useURL();
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -17,17 +19,18 @@ export default function AuthCallback() {
     const code = Linking.parse(url).queryParams?.code;
 
     if (typeof code !== 'string') {
-      setErrorMsg("That link didn't work. Try requesting a new one.");
+      setErrorMsg(t('authCallback.linkFailed'));
       return;
     }
 
     supabase.auth
       .exchangeCodeForSession(code)
       .then(({ error }) => {
-        if (error) setErrorMsg("That link didn't work. Try requesting a new one.");
+        if (error) setErrorMsg(t('authCallback.linkFailed'));
         else router.replace('/');
       })
-      .catch(() => setErrorMsg("That link didn't work. Try requesting a new one."));
+      .catch(() => setErrorMsg(t('authCallback.linkFailed')));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [url, router]);
 
   if (errorMsg) {
@@ -35,7 +38,7 @@ export default function AuthCallback() {
       <Screen>
         <ErrorState
           message={errorMsg}
-          actions={[{ label: 'Back to sign in', onPress: () => router.replace('/login') }]}
+          actions={[{ label: t('authCallback.backToSignIn'), onPress: () => router.replace('/login') }]}
         />
       </Screen>
     );
@@ -43,7 +46,7 @@ export default function AuthCallback() {
 
   return (
     <Screen>
-      <LoadingState message="Signing you in…" />
+      <LoadingState message={t('authCallback.signingIn')} />
     </Screen>
   );
 }

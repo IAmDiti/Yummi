@@ -15,6 +15,8 @@ import {
 import { Button } from '../src/components/Button';
 import { Body, Heading } from '../src/components/Heading';
 import { Screen } from '../src/components/Screen';
+import { useAndroidKeyboardHeight } from '../src/hooks/useAndroidKeyboardHeight';
+import { t as translate, useT } from '../src/i18n';
 import { PRIVACY_POLICY_URL } from '../src/services/legal';
 import { useAuth } from '../src/store/auth';
 import { colors, font, radius, spacing } from '../src/theme';
@@ -26,6 +28,8 @@ const MIN_PASSWORD = 6;
 
 export default function Login() {
   const router = useRouter();
+  const t = useT();
+  const androidKbHeight = useAndroidKeyboardHeight();
   const signIn = useAuth((s) => s.signIn);
   const signUp = useAuth((s) => s.signUp);
 
@@ -42,11 +46,11 @@ export default function Login() {
   const cleanEmail = email.trim();
 
   const validate = (): string | null => {
-    if (!EMAIL_RE.test(cleanEmail)) return 'Enter a valid email address.';
+    if (!EMAIL_RE.test(cleanEmail)) return t('login.enterValidEmail');
     if (password.length < MIN_PASSWORD) {
-      return `Password must be at least ${MIN_PASSWORD} characters.`;
+      return t('login.passwordMinLength', { min: MIN_PASSWORD });
     }
-    if (isSignup && password !== confirm) return 'Passwords don’t match.';
+    if (isSignup && password !== confirm) return t('login.passwordsDontMatch');
     return null;
   };
 
@@ -87,12 +91,11 @@ export default function Login() {
     return (
       <Screen>
         <View style={styles.centered}>
-          <Heading level="title">Confirm your email</Heading>
+          <Heading level="title">{t('login.confirmEmailTitle')}</Heading>
           <Body muted style={styles.centerText}>
-            We sent a confirmation link to {cleanEmail}. Tap it to finish setting up
-            your account, then come back and sign in.
+            {t('login.confirmEmailBody', { email: cleanEmail })}
           </Body>
-          <Button label="Back to sign in" onPress={() => { setCheckEmail(false); setMode('signin'); }} />
+          <Button label={t('login.backToSignIn')} onPress={() => { setCheckEmail(false); setMode('signin'); }} />
         </View>
       </Screen>
     );
@@ -101,7 +104,7 @@ export default function Login() {
   return (
     <Screen>
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, androidKbHeight ? { paddingBottom: androidKbHeight } : null]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
@@ -110,21 +113,17 @@ export default function Login() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.hero}>
-            <Heading level="title">{isSignup ? 'Create your account' : 'Welcome back'}</Heading>
-            <Body muted>
-              {isSignup
-                ? 'Sign up to post dishes, rate meals, and save dietary preferences.'
-                : 'Sign in to Yummi.'}
-            </Body>
+            <Heading level="title">{isSignup ? t('login.createAccount') : t('login.welcomeBack')}</Heading>
+            <Body muted>{isSignup ? t('login.signUpSubtitle') : t('login.signInSubtitle')}</Body>
           </View>
 
           <View style={styles.form}>
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>{t('login.email')}</Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="you@example.com"
+                placeholder={t('login.emailPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 style={styles.input}
                 autoCapitalize="none"
@@ -132,17 +131,17 @@ export default function Login() {
                 autoComplete="email"
                 keyboardType="email-address"
                 returnKeyType="next"
-                accessibilityLabel="Email address"
+                accessibilityLabel={t('login.email')}
               />
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={styles.label}>{t('login.password')}</Text>
               <View style={styles.passwordRow}>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+                  placeholder={isSignup ? t('login.passwordPlaceholderSignup') : t('login.passwordPlaceholderSignin')}
                   placeholderTextColor={colors.textMuted}
                   style={[styles.input, styles.passwordInput]}
                   autoCapitalize="none"
@@ -151,27 +150,27 @@ export default function Login() {
                   secureTextEntry={!showPassword}
                   returnKeyType={isSignup ? 'next' : 'go'}
                   onSubmitEditing={isSignup ? undefined : submit}
-                  accessibilityLabel="Password"
+                  accessibilityLabel={t('login.password')}
                 />
                 <Pressable
                   onPress={() => setShowPassword((v) => !v)}
                   hitSlop={8}
                   accessibilityRole="button"
-                  accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                  accessibilityLabel={showPassword ? t('login.hidePassword') : t('login.showPassword')}
                   style={styles.reveal}
                 >
-                  <Text style={styles.revealText}>{showPassword ? 'Hide' : 'Show'}</Text>
+                  <Text style={styles.revealText}>{showPassword ? t('login.hide') : t('login.show')}</Text>
                 </Pressable>
               </View>
             </View>
 
             {isSignup && (
               <View style={styles.field}>
-                <Text style={styles.label}>Confirm password</Text>
+                <Text style={styles.label}>{t('login.confirmPassword')}</Text>
                 <TextInput
                   value={confirm}
                   onChangeText={setConfirm}
-                  placeholder="Re-enter your password"
+                  placeholder={t('login.confirmPasswordPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   style={styles.input}
                   autoCapitalize="none"
@@ -180,7 +179,7 @@ export default function Login() {
                   secureTextEntry={!showPassword}
                   returnKeyType="go"
                   onSubmitEditing={submit}
-                  accessibilityLabel="Confirm password"
+                  accessibilityLabel={t('login.confirmPassword')}
                 />
               </View>
             )}
@@ -188,7 +187,7 @@ export default function Login() {
             {!!errorMsg && <Text style={styles.error}>{errorMsg}</Text>}
 
             <Button
-              label={isSignup ? 'Create account' : 'Sign in'}
+              label={isSignup ? t('login.createAccountBtn') : t('login.signIn')}
               onPress={submit}
               loading={busy}
               disabled={!cleanEmail || !password || (isSignup && !confirm)}
@@ -197,19 +196,19 @@ export default function Login() {
 
           <Pressable onPress={switchMode} hitSlop={8} accessibilityRole="button">
             <Text style={styles.switch}>
-              {isSignup ? 'Already have an account? ' : 'New to Yummi? '}
-              <Text style={styles.switchStrong}>{isSignup ? 'Sign in' : 'Create one'}</Text>
+              {isSignup ? t('login.alreadyHaveAccount') : t('login.newToYummi')}
+              <Text style={styles.switchStrong}>{isSignup ? t('login.signIn') : t('login.createOne')}</Text>
             </Text>
           </Pressable>
 
-          <Button label="Continue without an account" variant="ghost" onPress={() => router.back()} />
+          <Button label={t('login.continueWithoutAccount')} variant="ghost" onPress={() => router.back()} />
 
           <Pressable
             onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}
             hitSlop={8}
             accessibilityRole="link"
           >
-            <Text style={styles.privacyLink}>Privacy Policy</Text>
+            <Text style={styles.privacyLink}>{t('login.privacyPolicy')}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -221,18 +220,18 @@ function authMessage(err: unknown, isSignup: boolean): string {
   const raw = err instanceof Error ? err.message : '';
   const lower = raw.toLowerCase();
   if (lower.includes('already registered') || lower.includes('already exists')) {
-    return 'That email already has an account. Try signing in instead.';
+    return translate('login.errAlreadyRegistered');
   }
   if (lower.includes('invalid login credentials')) {
-    return 'Wrong email or password.';
+    return translate('login.errWrongCredentials');
   }
   if (lower.includes('email not confirmed')) {
-    return 'Confirm your email first — check your inbox for the link.';
+    return translate('login.errEmailNotConfirmed');
   }
   if (lower.includes('rate limit') || lower.includes('too many')) {
-    return 'Too many attempts. Wait a minute and try again.';
+    return translate('login.errRateLimit');
   }
-  return raw || (isSignup ? 'Could not create the account. Try again.' : 'Could not sign in. Try again.');
+  return raw || (isSignup ? translate('login.errCreateFailed') : translate('login.errSignInFailed'));
 }
 
 const styles = StyleSheet.create({

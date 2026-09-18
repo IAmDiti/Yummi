@@ -7,6 +7,7 @@
  * asks something or reports a problem.
  */
 
+import { LANGUAGE_ENGLISH_NAME, useLocale } from '../../store/locale';
 import type { CookingSession } from '../types';
 import { IS_MOCK, invokeFunction } from './client';
 import { mockCookingAnswer } from './mock';
@@ -37,6 +38,7 @@ export async function askCookingAssistant(
     substitutions,
     history,
     userMessage,
+    language: LANGUAGE_ENGLISH_NAME[useLocale.getState().language],
   });
 
   return {

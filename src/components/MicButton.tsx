@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { t } from '../i18n';
 import { colors, font, radius, spacing } from '../theme';
 
 type Props = {
@@ -11,14 +12,15 @@ type Props = {
   label?: string;
 };
 
-export function MicButton({ listening, onPress, caption, disabled, label = 'Hold to speak' }: Props) {
+export function MicButton({ listening, onPress, caption, disabled, label }: Props) {
+  const resolvedLabel = label ?? t('mic.holdToSpeak');
   return (
     <View style={styles.wrap}>
       <Pressable
         onPress={onPress}
         disabled={disabled}
         accessibilityRole="button"
-        accessibilityLabel={listening ? 'Stop listening' : label}
+        accessibilityLabel={listening ? t('mic.stopListening') : resolvedLabel}
         accessibilityState={{ disabled: !!disabled, selected: listening }}
         style={({ pressed }) => [
           styles.button,
@@ -30,7 +32,7 @@ export function MicButton({ listening, onPress, caption, disabled, label = 'Hold
         <Text style={styles.icon}>{listening ? '■' : '\u{1F3A4}'}</Text>
       </Pressable>
       <Text style={[styles.caption, listening && styles.captionActive]} numberOfLines={2}>
-        {caption ?? (listening ? 'Listening…' : label)}
+        {caption ?? (listening ? t('mic.listening') : resolvedLabel)}
       </Text>
     </View>
   );

@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { t } from '../i18n';
 import { colors, font, spacing } from '../theme';
 import { Button } from './Button';
 
@@ -11,11 +12,12 @@ type Props = {
   actions?: Action[];
 };
 
-export function ErrorState({ title = 'That didn’t work', message, actions = [] }: Props) {
+export function ErrorState({ title, message, actions = [] }: Props) {
+  const resolvedTitle = title ?? t('common.somethingWentWrong');
   return (
     <View style={styles.wrap}>
       <Text style={styles.emoji}>{'\u{1F615}'}</Text>
-      <Text style={styles.title}>{title}</Text>
+      <Text style={styles.title}>{resolvedTitle}</Text>
       <Text style={styles.message}>{message}</Text>
       <View style={styles.actions}>
         {actions.map((a) => (

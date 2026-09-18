@@ -11,6 +11,7 @@
 import { callClaudeStructured, type ObjectSchema } from '../_shared/anthropic.ts';
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { describeDietaryTags } from '../_shared/dietary.ts';
+import { localize } from '../_shared/messages.ts';
 import { enforceRateLimit } from '../_shared/ratelimit.ts';
 
 type Difficulty = 'easy' | 'medium' | 'hard' | 'extra_hard';
@@ -20,6 +21,8 @@ type Body = {
   rejected?: string[];
   dietaryTags?: string[];
   difficulty?: string;
+  /** English name of the app's display language, e.g. "German" — defaults to English. */
+  language?: string;
 };
 
 type Recommendation = {
@@ -55,7 +58,11 @@ If a "rejected" list is provided, you MUST NOT include any of those dishes or a 
 
 If dietary restrictions are given, they are HARD CONSTRAINTS, not preferences — every recommendation must fully comply, no exceptions, even if that means ignoring some of the user's ingredients. If nothing fully compliant can be made from the given ingredients, still return compliant meals using reasonable additional pantry staples rather than violating a restriction.
 
-If a specific difficulty tier is requested, EVERY recommendation in the batch must be exactly that tier.`;
+If a specific difficulty tier is requested, EVERY recommendation in the batch must be exactly that tier.
+
+The ingredients the user lists may be written in any language (English, German, Albanian, Macedonian, Serbian, or others) — understand them regardless of language, and do not treat an unfamiliar-looking word as missing just because it isn't English.
+
+The user's message will tell you which language to reply in. Write every natural-language field (name, description, reason, steps, requiredIngredients, missingIngredients) fluently and naturally in that language, as a native speaker would write it — not a stiff or literal word-for-word translation from English. Use that language's own everyday culinary vocabulary and units (e.g. metric where that language's countries would use it), not internet slang or borrowed English terms unless that is genuinely how a native speaker would say it. The "difficulty" field must still be exactly one of the English enum values (easy/medium/hard/extra_hard) regardless of language — that field is read by code, not shown as-is.`;
 
 const SCHEMA: ObjectSchema = {
   type: 'object',
@@ -116,9 +123,10 @@ Deno.serve(async (req) => {
   const difficulty = DIFFICULTIES.includes(body.difficulty as Difficulty)
     ? (body.difficulty as Difficulty)
     : undefined;
+  const language = String(body.language ?? '').trim() || 'English';
 
   if (ingredients.length === 0) {
-    return json({ error: 'Add at least one ingredient first.' }, 400);
+    return json({ error: localize('noIngredients', language) }, 400);
   }
 
   const userMsg = [
@@ -131,6 +139,7 @@ Deno.serve(async (req) => {
       : '',
     difficulty ? `Only include meals at this difficulty tier: ${difficulty}.` : '',
     'Recommend 5-6 diverse meal options.',
+    `Reply in ${language} for every natural-language field (name, description, reason, steps, requiredIngredients, missingIngredients). Keep "difficulty" as the English enum value.`,
   ]
     .filter(Boolean)
     .join('\n');
@@ -153,14 +162,14 @@ Deno.serve(async (req) => {
     }
 
     if (list.length === 0) {
-      return json({ error: 'The assistant could not plan any meals. Try again.' }, 502);
+      return json({ error: localize('noMeals', language) }, 502);
     }
 
     return json({ recommendations: list });
   } catch (err) {
     console.error('recommend error', err);
     return json(
-      { error: err instanceof Error ? err.message : 'The assistant is having trouble right now.' },
+      { error: err instanceof Error ? err.message : localize('trouble', language) },
       502,
     );
   }

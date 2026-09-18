@@ -1,16 +1,10 @@
 import { ScrollView, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
+import { t, tPlural, useT } from '../i18n';
 import type { Recommendation } from '../services/types';
 import { colors, font, radius, spacing } from '../theme';
 import { Card } from './Card';
 import { Body, Heading } from './Heading';
-
-const DIFFICULTY_LABEL: Record<string, string> = {
-  easy: 'Easy',
-  medium: 'Medium',
-  hard: 'Hard',
-  extra_hard: 'Extra hard',
-};
 
 // Escalating warmth from easy to extra-hard, reusing the existing palette.
 const DIFFICULTY_COLOR: Record<string, string> = {
@@ -38,9 +32,10 @@ type Props = {
 };
 
 export function RecommendationCard({ recommendation: r, style, height }: Props) {
+  useT();
   const timeLine = [
-    r.prepTime + r.cookTime > 0 ? `${r.prepTime + r.cookTime} minutes` : null,
-    r.pans ? `${r.pans} pan${r.pans > 1 ? 's' : ''}` : null,
+    r.prepTime + r.cookTime > 0 ? t('recommendCard.minutes', { count: r.prepTime + r.cookTime }) : null,
+    r.pans ? tPlural('recommendCard.pan', r.pans) : null,
   ]
     .filter(Boolean)
     .join('  ·  ');
@@ -58,7 +53,7 @@ export function RecommendationCard({ recommendation: r, style, height }: Props) 
         <View
           style={[styles.badge, { backgroundColor: DIFFICULTY_COLOR[r.difficulty] ?? colors.accent }]}
         >
-          <Text style={styles.badgeText}>{DIFFICULTY_LABEL[r.difficulty] ?? r.difficulty}</Text>
+          <Text style={styles.badgeText}>{t(`difficulty.${r.difficulty}`)}</Text>
         </View>
 
         <Heading level="title">{r.name}</Heading>
@@ -67,14 +62,14 @@ export function RecommendationCard({ recommendation: r, style, height }: Props) 
 
         {!!r.reason && (
           <View style={styles.why}>
-            <Text style={styles.whyLabel}>Why I picked this</Text>
+            <Text style={styles.whyLabel}>{t('recommendCard.whyIPickedThis')}</Text>
             <Body>{r.reason}</Body>
           </View>
         )}
 
         {r.missingIngredients.length > 0 && (
           <View style={styles.missing}>
-            <Text style={styles.missingLabel}>You may need to grab</Text>
+            <Text style={styles.missingLabel}>{t('recommendCard.youMayNeed')}</Text>
             <View style={styles.chips}>
               {r.missingIngredients.map((m) => (
                 <View key={m} style={styles.chip}>

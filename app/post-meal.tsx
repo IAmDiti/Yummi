@@ -20,6 +20,8 @@ import { Body, Heading } from '../src/components/Heading';
 import { ErrorState } from '../src/components/ErrorState';
 import { LoadingState } from '../src/components/LoadingState';
 import { Screen } from '../src/components/Screen';
+import { useAndroidKeyboardHeight } from '../src/hooks/useAndroidKeyboardHeight';
+import { useT } from '../src/i18n';
 import { createPost } from '../src/services/social/posts';
 import { useAuth } from '../src/store/auth';
 import { useSession } from '../src/store/session';
@@ -29,6 +31,8 @@ type Phase = 'camera' | 'preview' | 'compose' | 'posting' | 'error';
 
 export default function PostMeal() {
   const router = useRouter();
+  const t = useT();
+  const androidKbHeight = useAndroidKeyboardHeight();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -42,7 +46,7 @@ export default function PostMeal() {
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [caption, setCaption] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
-  const [retryLabel, setRetryLabel] = useState('Try again');
+  const [retryLabel, setRetryLabel] = useState('');
   const [retry, setRetry] = useState<() => void>(() => () => {});
 
   const goHomeWithoutPosting = () => {
@@ -50,10 +54,10 @@ export default function PostMeal() {
     router.replace('/');
   };
 
-  const fail = (message: string, retryFn: () => void, label = 'Try again') => {
+  const fail = (message: string, retryFn: () => void, label?: string) => {
     setErrorMsg(message);
     setRetry(() => retryFn);
-    setRetryLabel(label);
+    setRetryLabel(label ?? t('common.tryAgain'));
     setPhase('error');
   };
 
@@ -66,7 +70,7 @@ export default function PostMeal() {
   if (status === 'loading') {
     return (
       <Screen>
-        <LoadingState message="One moment…" />
+        <LoadingState message={t('postMeal.oneMoment')} />
       </Screen>
     );
   }
@@ -75,11 +79,11 @@ export default function PostMeal() {
     return (
       <Screen>
         <ErrorState
-          title="Sign in to share your dish"
-          message="Create a free account to post your photo to Discover."
+          title={t('postMeal.signInTitle')}
+          message={t('postMeal.signInBody')}
           actions={[
-            { label: 'Sign in', onPress: () => router.push('/login') },
-            { label: 'Skip, don’t post publicly', onPress: goHomeWithoutPosting, variant: 'secondary' },
+            { label: t('postMeal.signIn'), onPress: () => router.push('/login') },
+            { label: t('common.skipDontPost'), onPress: goHomeWithoutPosting, variant: 'secondary' },
           ]}
         />
       </Screen>
@@ -99,7 +103,7 @@ export default function PostMeal() {
       setPhotoUri(out.uri);
       setPhase('preview');
     } catch {
-      fail("Couldn't take the photo. Try again.", () => setPhase('camera'));
+      fail(t('postMeal.photoFailed'), () => setPhase('camera'));
     }
   };
 
@@ -111,7 +115,7 @@ export default function PostMeal() {
         userId,
         authorName: profile?.hideUsername
           ? '***'
-          : profile?.displayName?.trim() || 'A Yummi cook',
+          : profile?.displayName?.trim() || t('postMeal.anonymousAuthor'),
         authorAvatarUrl: profile?.avatarUrl ?? null,
         recipeName: cooking.recommendation.name,
         difficulty: cooking.recommendation.difficulty,
@@ -121,7 +125,7 @@ export default function PostMeal() {
       endCooking();
       router.replace('/discover');
     } catch (err) {
-      fail(err instanceof Error ? err.message : 'Could not post your photo. Try again.', submitPost);
+      fail(err instanceof Error ? err.message : t('postMeal.postFailed'), submitPost);
     }
   };
 
@@ -130,7 +134,7 @@ export default function PostMeal() {
     if (!permission) {
       return (
         <Screen>
-          <LoadingState message="Getting the camera ready…" />
+          <LoadingState message={t('common.gettingCameraReady')} />
         </Screen>
       );
     }
@@ -138,17 +142,13 @@ export default function PostMeal() {
       return (
         <Screen>
           <ErrorState
-            title="Camera access needed"
-            message={
-              permission.canAskAgain
-                ? 'Yummi needs the camera to photograph your dish.'
-                : 'Camera access is off. Turn it on for Yummi in your phone settings.'
-            }
+            title={t('postMeal.cameraAccessTitle')}
+            message={permission.canAskAgain ? t('postMeal.cameraAccessBody') : t('postMeal.cameraAccessOff')}
             actions={[
               permission.canAskAgain
-                ? { label: 'Allow camera', onPress: requestPermission }
-                : { label: 'Open settings', onPress: () => Linking.openSettings() },
-              { label: 'Skip, don’t post publicly', onPress: goHomeWithoutPosting, variant: 'secondary' },
+                ? { label: t('common.allowCamera'), onPress: requestPermission }
+                : { label: t('common.openSettings'), onPress: () => Linking.openSettings() },
+              { label: t('common.skipDontPost'), onPress: goHomeWithoutPosting, variant: 'secondary' },
             ]}
           />
         </Screen>
@@ -160,14 +160,16 @@ export default function PostMeal() {
         <View style={styles.cameraWrap}>
           <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
           <View style={styles.cameraOverlay}>
-            <Body style={styles.overlayText}>Show off your {cooking.recommendation.name}</Body>
+            <Body style={styles.overlayText}>
+              {t('postMeal.showOff', { name: cooking.recommendation.name })}
+            </Body>
           </View>
         </View>
         <View style={styles.shutterBar}>
           <Pressable
             onPress={takePhoto}
             accessibilityRole="button"
-            accessibilityLabel="Take photo"
+            accessibilityLabel={t('common.takePhoto')}
             style={({ pressed }) => [styles.shutter, pressed && styles.shutterPressed]}
           >
             <View style={styles.shutterInner} />
@@ -184,8 +186,8 @@ export default function PostMeal() {
           <Image source={{ uri: photoUri }} style={styles.preview} resizeMode="cover" />
         </View>
         <View style={styles.previewActions}>
-          <Button label="Use this photo" onPress={() => setPhase('compose')} />
-          <Button label="Retake" variant="secondary" onPress={() => setPhase('camera')} />
+          <Button label={t('common.usePhoto')} onPress={() => setPhase('compose')} />
+          <Button label={t('common.retake')} variant="secondary" onPress={() => setPhase('camera')} />
         </View>
       </Screen>
     );
@@ -194,7 +196,7 @@ export default function PostMeal() {
   if (phase === 'posting') {
     return (
       <Screen>
-        <LoadingState message="Posting your photo…" />
+        <LoadingState message={t('postMeal.posting')} />
       </Screen>
     );
   }
@@ -206,7 +208,7 @@ export default function PostMeal() {
           message={errorMsg}
           actions={[
             { label: retryLabel, onPress: retry },
-            { label: 'Skip, don’t post publicly', onPress: goHomeWithoutPosting, variant: 'secondary' },
+            { label: t('common.skipDontPost'), onPress: goHomeWithoutPosting, variant: 'secondary' },
           ]}
         />
       </Screen>
@@ -217,7 +219,7 @@ export default function PostMeal() {
   return (
     <Screen>
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, androidKbHeight ? { paddingBottom: androidKbHeight } : null]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
@@ -236,19 +238,19 @@ export default function PostMeal() {
           </View>
 
           <Heading level="heading" style={styles.captionLabel}>
-            Add a caption
+            {t('postMeal.addCaption')}
           </Heading>
           <TextInput
             value={caption}
             onChangeText={setCaption}
-            placeholder="How did it turn out?"
+            placeholder={t('postMeal.captionPlaceholder')}
             placeholderTextColor={colors.textMuted}
             style={styles.captionInput}
             multiline
           />
 
-          <Button label="Post" onPress={submitPost} />
-          <Button label="Skip, don’t post publicly" variant="ghost" onPress={goHomeWithoutPosting} />
+          <Button label={t('postMeal.post')} onPress={submitPost} />
+          <Button label={t('common.skipDontPost')} variant="ghost" onPress={goHomeWithoutPosting} />
         </ScrollView>
       </KeyboardAvoidingView>
     </Screen>

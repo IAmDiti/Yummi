@@ -9,6 +9,7 @@ import { Body } from '../src/components/Heading';
 import { ErrorState } from '../src/components/ErrorState';
 import { LoadingState } from '../src/components/LoadingState';
 import { Screen } from '../src/components/Screen';
+import { useT } from '../src/i18n';
 import { detectIngredients } from '../src/services/ai/vision';
 import { AiError } from '../src/services/types';
 import { useSession } from '../src/store/session';
@@ -18,6 +19,7 @@ type Phase = 'camera' | 'preview' | 'analyzing' | 'error';
 
 export default function Scan() {
   const router = useRouter();
+  const t = useT();
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -33,7 +35,7 @@ export default function Scan() {
   if (!permission) {
     return (
       <Screen>
-        <LoadingState message="Getting the camera ready…" />
+        <LoadingState message={t('common.gettingCameraReady')} />
       </Screen>
     );
   }
@@ -42,17 +44,13 @@ export default function Scan() {
     return (
       <Screen>
         <ErrorState
-          title="Camera access needed"
-          message={
-            permission.canAskAgain
-              ? 'Yummi needs the camera to look inside your fridge.'
-              : 'Camera access is off. Turn it on for Yummi in your phone settings, or add ingredients by hand.'
-          }
+          title={t('scan.cameraAccessTitle')}
+          message={permission.canAskAgain ? t('scan.cameraAccessBody') : t('scan.cameraAccessOff')}
           actions={[
             permission.canAskAgain
-              ? { label: 'Allow camera', onPress: requestPermission }
-              : { label: 'Open settings', onPress: () => Linking.openSettings() },
-            { label: 'Add ingredients manually', onPress: goManual, variant: 'secondary' },
+              ? { label: t('common.allowCamera'), onPress: requestPermission }
+              : { label: t('common.openSettings'), onPress: () => Linking.openSettings() },
+            { label: t('common.addIngredientsManually'), onPress: goManual, variant: 'secondary' },
           ]}
         />
       </Screen>
@@ -78,14 +76,14 @@ export default function Scan() {
       });
       setPhotoB64(out.base64 ?? null);
     } catch {
-      setErrorMsg("Couldn't take the photo. Try again.");
+      setErrorMsg(t('scan.photoFailed'));
       setPhase('error');
     }
   };
 
   const analyze = async () => {
     if (!photoB64) {
-      setErrorMsg('Still preparing the photo — try again in a second.');
+      setErrorMsg(t('scan.stillPreparing'));
       setPhase('error');
       return;
     }
@@ -93,21 +91,14 @@ export default function Scan() {
     try {
       const { ingredients, warning } = await detectIngredients(photoB64);
       if (ingredients.length === 0) {
-        setErrorMsg(
-          warning ??
-            "I couldn't identify enough ingredients. Try taking a photo with the fridge more open and the food visible.",
-        );
+        setErrorMsg(warning ?? t('scan.notEnoughIngredients'));
         setPhase('error');
         return;
       }
       setIngredients(ingredients);
       router.replace('/ingredients');
     } catch (err) {
-      setErrorMsg(
-        err instanceof AiError
-          ? err.message
-          : 'Something went wrong reading your fridge. Try again.',
-      );
+      setErrorMsg(err instanceof AiError ? err.message : t('scan.somethingWrong'));
       setPhase('error');
     }
   };
@@ -123,7 +114,7 @@ export default function Scan() {
   if (phase === 'analyzing') {
     return (
       <Screen>
-        <LoadingState message="Looking in your fridge…" />
+        <LoadingState message={t('scan.analyzing')} />
       </Screen>
     );
   }
@@ -134,8 +125,8 @@ export default function Scan() {
         <ErrorState
           message={errorMsg}
           actions={[
-            { label: 'Retake photo', onPress: retake },
-            { label: 'Add ingredients manually', onPress: goManual, variant: 'secondary' },
+            { label: t('common.retake'), onPress: retake },
+            { label: t('common.addIngredientsManually'), onPress: goManual, variant: 'secondary' },
           ]}
         />
       </Screen>
@@ -149,11 +140,11 @@ export default function Scan() {
           <Image source={{ uri: photoUri }} style={styles.preview} resizeMode="cover" />
         </View>
         <Body muted style={styles.hint}>
-          Can you see most of the food? If not, retake with the door wide open.
+          {t('scan.previewHint')}
         </Body>
         <View style={styles.previewActions}>
-          <Button label="Use this photo" onPress={analyze} />
-          <Button label="Retake" variant="secondary" onPress={retake} />
+          <Button label={t('common.usePhoto')} onPress={analyze} />
+          <Button label={t('common.retake')} variant="secondary" onPress={retake} />
         </View>
       </Screen>
     );
@@ -165,14 +156,14 @@ export default function Scan() {
       <View style={styles.cameraWrap}>
         <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing="back" />
         <View style={styles.cameraOverlay}>
-          <Body style={styles.overlayText}>Open the fridge door and fit the shelves in frame</Body>
+          <Body style={styles.overlayText}>{t('scan.overlayText')}</Body>
         </View>
       </View>
       <View style={styles.shutterBar}>
         <Pressable
           onPress={takePhoto}
           accessibilityRole="button"
-          accessibilityLabel="Take photo"
+          accessibilityLabel={t('common.takePhoto')}
           style={({ pressed }) => [styles.shutter, pressed && styles.shutterPressed]}
         >
           <View style={styles.shutterInner} />

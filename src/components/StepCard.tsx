@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { t } from '../i18n';
 import { colors, font, radius, spacing } from '../theme';
 
 type Props = {
@@ -11,9 +12,7 @@ type Props = {
 export function StepCard({ stepNumber, totalSteps, text }: Props) {
   return (
     <View style={styles.card}>
-      <Text style={styles.eyebrow}>
-        Step {stepNumber} of {totalSteps}
-      </Text>
+      <Text style={styles.eyebrow}>{t('stepCard.stepOf', { n: stepNumber, total: totalSteps })}</Text>
       <Text style={styles.text}>{text}</Text>
     </View>
   );

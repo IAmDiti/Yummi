@@ -10,6 +10,7 @@
  * higher-level services return canned data without ever calling this.
  */
 
+import { t } from '../../i18n';
 import { IS_MOCK, SUPABASE_ANON_KEY, SUPABASE_URL } from '../env';
 import { AiError } from '../types';
 
@@ -58,9 +59,9 @@ export async function invokeFunction<T>(
   } catch (err) {
     clearTimeout(timer);
     if (err instanceof Error && err.name === 'AbortError') {
-      throw new AiError('timeout', 'The assistant is taking longer than usual. Try again in a moment.');
+      throw new AiError('timeout', t('ai.timeout'));
     }
-    throw new AiError('network', 'No connection. Check your internet and try again.');
+    throw new AiError('network', t('ai.network'));
   }
   clearTimeout(timer);
 
@@ -73,16 +74,10 @@ export async function invokeFunction<T>(
 
   if (!res.ok) {
     if (res.status === 429) {
-      throw new AiError(
-        'ai',
-        payload?.error ?? 'A lot of requests just now. Wait a moment and try again.',
-      );
+      throw new AiError('ai', payload?.error ?? t('ai.rateLimited'));
     }
     const message =
-      payload?.error ??
-      (res.status >= 500
-        ? 'The assistant is having trouble right now. Try again in a moment.'
-        : 'Something went wrong. Try again.');
+      payload?.error ?? (res.status >= 500 ? t('ai.serverError') : t('ai.genericError'));
     throw new AiError('ai', message);
   }
 

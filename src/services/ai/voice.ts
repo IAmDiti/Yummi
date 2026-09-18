@@ -10,6 +10,9 @@
 
 import * as Speech from 'expo-speech';
 
+import { t } from '../../i18n';
+import { SPEECH_LOCALE, useLocale } from '../../store/locale';
+
 // ---- Text to speech -------------------------------------------------------
 
 let speaking = false;
@@ -20,6 +23,7 @@ export function speak(text: string) {
     Speech.stop();
     speaking = true;
     Speech.speak(text, {
+      language: SPEECH_LOCALE[useLocale.getState().language],
       rate: 1.0,
       pitch: 1.0,
       onDone: () => {
@@ -84,7 +88,7 @@ export async function startListening(
   opts: { continuous?: boolean } = {},
 ): Promise<boolean> {
   if (!recognition) {
-    handlers.onError?.('Voice input needs the full app build.');
+    handlers.onError?.(t('voice.needsFullBuild'));
     return false;
   }
   if (listening) return true;
@@ -92,7 +96,7 @@ export async function startListening(
   try {
     const perm = await recognition.requestPermissionsAsync();
     if (!perm.granted) {
-      handlers.onError?.('Microphone permission is off. Turn it on in Settings to use voice.');
+      handlers.onError?.(t('voice.micPermissionOff'));
       return false;
     }
 
@@ -104,7 +108,7 @@ export async function startListening(
     );
     activeSubs.push(
       recognition.addListener('error', (e: any) => {
-        handlers.onError?.(e?.message ?? "Didn't catch that. Try again or use the buttons.");
+        handlers.onError?.(e?.message ?? t('voice.didntCatchThat'));
       }),
     );
     activeSubs.push(
@@ -115,7 +119,7 @@ export async function startListening(
     );
 
     recognition.start({
-      lang: 'en-US',
+      lang: SPEECH_LOCALE[useLocale.getState().language],
       interimResults: true,
       continuous: opts.continuous ?? false,
       // keep it snappy for kitchen use
@@ -125,7 +129,7 @@ export async function startListening(
     return true;
   } catch (err) {
     listening = false;
-    handlers.onError?.("Couldn't start voice input. Use the buttons instead.");
+    handlers.onError?.(t('voice.couldntStart'));
     return false;
   }
 }
@@ -153,7 +157,25 @@ export function isListening() {
 
 // ---- Intent helpers ----------------------------------------------------
 
-const DONE_RE = /\b(done|next|continue|finished|ready|go on|keep going)\b/i;
+// Words that mean "advance to the next step", per supported language. Always
+// includes the English set too, since a user may say it out of habit
+// regardless of the app's display language.
+const ADVANCE_WORDS: Record<string, string[]> = {
+  en: ['done', 'next', 'continue', 'finished', 'ready', 'go on', 'keep going'],
+  de: ['fertig', 'weiter', 'nächster schritt', 'nächste', 'geschafft'],
+  sq: ['gati', 'tjetra', 'vazhdo', 'përfundova', 'hapi tjetër'],
+  mk: ['готово', 'следно', 'продолжи', 'завршив', 'следен чекор'],
+  sr: ['gotovo', 'готово', 'dalje', 'nastavi', 'sledeće', 'sledeći korak'],
+};
+
+function buildAdvanceRe(): RegExp {
+  const words = new Set(ADVANCE_WORDS.en);
+  for (const list of Object.values(ADVANCE_WORDS)) list.forEach((w) => words.add(w));
+  const pattern = [...words].map((w) => w.replace(/\s+/g, '\\s+')).join('|');
+  return new RegExp(`\\b(${pattern})\\b`, 'i');
+}
+
+const DONE_RE = buildAdvanceRe();
 
 /** True when a transcript means "advance to the next step". */
 export function isAdvanceCommand(text: string): boolean {

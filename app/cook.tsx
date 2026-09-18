@@ -17,6 +17,8 @@ import { Body, Heading } from '../src/components/Heading';
 import { MicButton } from '../src/components/MicButton';
 import { Screen } from '../src/components/Screen';
 import { StepCard } from '../src/components/StepCard';
+import { useAndroidKeyboardHeight } from '../src/hooks/useAndroidKeyboardHeight';
+import { useT } from '../src/i18n';
 import { askCookingAssistant } from '../src/services/ai/cooking';
 import {
   isAdvanceCommand,
@@ -32,6 +34,8 @@ import { colors, font, radius, spacing } from '../src/theme';
 
 export default function Cook() {
   const router = useRouter();
+  const t = useT();
+  const androidKbHeight = useAndroidKeyboardHeight();
   const cooking = useSession((s) => s.cooking);
   const nextStep = useSession((s) => s.nextStep);
   const addChatTurn = useSession((s) => s.addChatTurn);
@@ -61,8 +65,9 @@ export default function Cook() {
     if (!cooking || finished) return;
     if (ttsOn && lastSpokenStep.current !== current) {
       lastSpokenStep.current = current;
-      speak(`Step ${current + 1}. ${steps[current]}`);
+      speak(t('cook.stepAnnounce', { n: current + 1, text: steps[current] }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current, ttsOn, cooking, finished, steps]);
 
   // Cleanup on unmount.
@@ -101,10 +106,7 @@ export default function Cook() {
         }
         if (ttsOn) speak(reply.answer);
       } catch (err) {
-        const msg =
-          err instanceof AiError
-            ? err.message
-            : "I couldn't reach the assistant. Check your connection and try again.";
+        const msg = err instanceof AiError ? err.message : t('cook.couldNotReachAssistant');
         addChatTurn({ role: 'assistant', content: msg });
       } finally {
         setAsking(false);
@@ -121,17 +123,17 @@ export default function Cook() {
       setMicCaption(undefined);
       return;
     }
-    setMicCaption('Listening… say “done” or ask a question');
+    setMicCaption(t('cook.listeningDone'));
     const ok = await startListening(
       {
-        onTranscript: (t, isFinal) => {
-          setMicCaption(t || 'Listening…');
+        onTranscript: (heard, isFinal) => {
+          setMicCaption(heard || t('mic.listening'));
           if (!isFinal) return;
-          if (isAdvanceCommand(t)) {
-            setMicCaption('Next step');
+          if (isAdvanceCommand(heard)) {
+            setMicCaption(t('cook.nextStep'));
             advance();
-          } else if (t.trim().length > 2) {
-            submitQuestion(t);
+          } else if (heard.trim().length > 2) {
+            submitQuestion(heard);
           }
         },
         onError: (m) => {
@@ -159,7 +161,7 @@ export default function Cook() {
   return (
     <Screen>
       <KeyboardAvoidingView
-        style={styles.flex}
+        style={[styles.flex, androidKbHeight ? { paddingBottom: androidKbHeight } : null]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={90}
       >
@@ -175,9 +177,9 @@ export default function Cook() {
             hitSlop={10}
             accessibilityRole="switch"
             accessibilityState={{ checked: ttsOn }}
-            accessibilityLabel="Read steps aloud"
+            accessibilityLabel={t('cook.readAloudAria')}
           >
-            <Text style={styles.ttsToggle}>{ttsOn ? '🔊 Voice on' : '🔇 Voice off'}</Text>
+            <Text style={styles.ttsToggle}>{ttsOn ? t('cook.voiceOn') : t('cook.voiceOff')}</Text>
           </Pressable>
         </View>
 
@@ -189,9 +191,9 @@ export default function Cook() {
           {finished ? (
             <View style={styles.done}>
               <Text style={styles.doneEmoji}>🍽️</Text>
-              <Heading level="title">Enjoy your meal!</Heading>
+              <Heading level="title">{t('cook.enjoyMeal')}</Heading>
               <Body muted style={styles.doneText}>
-                That’s every step for {cooking.recommendation.name}.
+                {t('cook.thatsEveryStep', { name: cooking.recommendation.name })}
               </Body>
             </View>
           ) : (
@@ -200,16 +202,16 @@ export default function Cook() {
 
           {history.length > 0 && (
             <View style={styles.chat}>
-              {history.map((t, i) => (
+              {history.map((turn, i) => (
                 <View
                   key={i}
-                  style={[styles.bubble, t.role === 'user' ? styles.userBubble : styles.aiBubble]}
+                  style={[styles.bubble, turn.role === 'user' ? styles.userBubble : styles.aiBubble]}
                 >
-                  <Text style={styles.bubbleRole}>{t.role === 'user' ? 'You' : 'Assistant'}</Text>
-                  <Text style={styles.bubbleText}>{t.content}</Text>
+                  <Text style={styles.bubbleRole}>{turn.role === 'user' ? t('cook.you') : t('cook.assistant')}</Text>
+                  <Text style={styles.bubbleText}>{turn.content}</Text>
                 </View>
               ))}
-              {asking && <Text style={styles.thinking}>Assistant is thinking…</Text>}
+              {asking && <Text style={styles.thinking}>{t('cook.assistantThinking')}</Text>}
             </View>
           )}
         </ScrollView>
@@ -220,7 +222,7 @@ export default function Cook() {
               <TextInput
                 value={question}
                 onChangeText={setQuestion}
-                placeholder="Ask anything (e.g. “no olive oil”)"
+                placeholder={t('cook.askPlaceholder')}
                 placeholderTextColor={colors.textMuted}
                 style={styles.askInput}
                 returnKeyType="send"
@@ -231,7 +233,7 @@ export default function Cook() {
                 disabled={asking || !question.trim()}
                 style={[styles.sendBtn, (asking || !question.trim()) && styles.sendBtnOff]}
                 accessibilityRole="button"
-                accessibilityLabel="Send question"
+                accessibilityLabel={t('cook.sendAria')}
               >
                 <Text style={styles.sendText}>↑</Text>
               </Pressable>
@@ -243,11 +245,11 @@ export default function Cook() {
                   listening={listening}
                   onPress={toggleMic}
                   caption={micCaption}
-                  label="Say “done”"
+                  label={t('cook.sayDone')}
                 />
               )}
               <View style={styles.doneBtnWrap}>
-                <Button label="Done" onPress={advance} accessibilityHint="Go to the next step" />
+                <Button label={t('common.done')} onPress={advance} accessibilityHint={t('cook.doneHint')} />
               </View>
             </View>
           </View>
@@ -255,8 +257,8 @@ export default function Cook() {
 
         {finished && (
           <View style={styles.finishedActions}>
-            <Button label="Share a photo of it" onPress={() => router.push('/post-meal')} />
-            <Button label="Back to home" variant="secondary" onPress={leaveHome} />
+            <Button label={t('cook.sharePhoto')} onPress={() => router.push('/post-meal')} />
+            <Button label={t('cook.backToHome')} variant="secondary" onPress={leaveHome} />
           </View>
         )}
       </KeyboardAvoidingView>
