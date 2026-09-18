@@ -28,7 +28,7 @@
         "android.permission.RECORD_AUDIO"
       ],
       "predictiveBackGestureEnabled": false,
-      "versionCode": 13
+      "versionCode": 14
     },
     "web": {
       "favicon": "./assets/favicon.png",
